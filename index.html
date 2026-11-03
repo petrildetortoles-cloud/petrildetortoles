@@ -86,7 +86,7 @@ nav a:hover,nav button:hover{background:var(--marca-claro)}
 nav a[aria-current=page]{background:var(--tinta);color:var(--papel)}
 nav .entrar{background:var(--btn-bg);color:var(--btn-fg);margin-left:6px}
 .menu-btn{display:none;border:2px solid var(--tinta)!important}
-@media(max-width:820px){
+@media(max-width:1000px){
   .menu-btn{display:block}
   nav{display:none;position:absolute;left:0;right:0;top:100%;background:var(--papel);border-bottom:2px solid var(--tinta);padding:12px 24px 18px;flex-direction:column;align-items:stretch}
   nav.abierto{display:flex}
@@ -232,6 +232,16 @@ footer{padding:28px 0 40px;font-size:.9rem;color:var(--suave)}
 .mini form{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
 .mini input{padding:.4em .6em;border:2px solid var(--tinta);border-radius:6px;background:var(--papel);color:var(--tinta);font:inherit}
 
+/* La junta */
+.junta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:44px 28px}
+.junta-foto,.junta-ini{display:block;width:100%;aspect-ratio:1;border:2px solid var(--tinta)}
+.junta-foto{object-fit:cover;background:var(--marca-claro)}
+.junta-ini{display:grid;place-items:center;font:800 5rem "Bricolage Grotesque",sans-serif}
+.junta-ini.i0{background:var(--sol);color:var(--sobre-sol)}
+.junta-ini.i1{background:var(--marca-claro);color:var(--marca)}
+.junta-ini.i2{background:var(--banda-bg);color:var(--banda-fg)}
+.junta-miembro h3{margin:14px 0 8px}
+
 /* Forma de pago */
 .pago{border:0;margin:0;padding:0;display:grid;gap:12px}
 .pago legend{font-weight:600;font-size:1rem;padding:0;margin-bottom:6px}
@@ -319,7 +329,7 @@ const AJUSTES_POR_DEFECTO = {
   nombre: "El Petril de Tórtoles",
   lema: "Asociación cultural",
   descripcion: "Somos la asociación cultural El Petril de Tórtoles. Organizamos actividades abiertas a todo el mundo. Aquí puedes ver lo que hemos hecho y lo que viene, y si eres socio, apuntarte y opinar.",
-  email: "petrildetortoles@gmail.com", telefono: "", whatsappContacto: "605086688", direccion: "", iban: "", cuota: "", juntaCobro: "",
+  email: "petrildetortoles@gmail.com", telefono: "", whatsappContacto: "605086688", direccion: "", iban: "", cuota: "", juntaCobro: "", juntaMandato: "",
   redes: { instagram:"https://www.instagram.com/petrildetortoles/", facebook:"https://www.facebook.com/p/El-Petril-de-T%C3%B3rtoles-61559645693769/", youtube:"", tiktok:"", x:"", whatsapp:"https://www.whatsapp.com/channel/0029Vb52hyOGpLHTpZS1Lx1q", web:"" }
 };
 const REDES = [["instagram","Instagram"],["facebook","Facebook"],["youtube","YouTube"],["tiktok","TikTok"],["x","X"],["whatsapp","Canal de WhatsApp"],["web","Otra web"]];
@@ -418,6 +428,11 @@ const DEMO = {
     {id:"n1",titulo:"Ya puedes reservar tus décimos de lotería",categoria:"Lotería",texto:"Abrimos la reserva de décimos para el sorteo de Navidad. Pídelos a la junta antes de la fecha límite que se indique. Noticia de ejemplo.",fijada:true,creado:ts(1)},
     {id:"n2",titulo:"Nuevas actividades para este otoño",categoria:"Actividades",texto:"Ya están publicadas las primeras citas del trimestre. Mira el calendario y apúntate desde tu cuenta. Noticia de ejemplo.",fijada:false,creado:ts(4)}
   ],
+  junta:[
+    {id:"j1",cargo:"Presidencia",nombre:"Nombre de ejemplo",orden:1},
+    {id:"j2",cargo:"Secretaría",nombre:"Nombre de ejemplo",orden:2},
+    {id:"j3",cargo:"Tesorería",nombre:"Nombre de ejemplo",orden:3}
+  ],
   encuestas:[], users:[]
 };
 
@@ -473,6 +488,7 @@ function shell(main, r){
       ${link("", "Inicio", "inicio")}
       ${link("noticias","Noticias","noticias")}
       ${link("proyectos","Proyectos","proyectos")}
+      ${link("junta","La junta","junta")}
       ${link("actividades","Actividades","actividades")}
       ${esSocio()?link("encuestas","Encuestas","encuestas"):""}
       ${esAdmin()?link("admin","Panel de la junta","admin"):""}
@@ -648,6 +664,21 @@ async function vistaInicio(){
     ${ps.length?`<div class="rejilla">${ps.map(tarjetaProyecto).join("")}</div>`:vacio("Todavía no hay proyectos publicados","La junta puede añadirlos desde el panel.")}
   </section>
   ${bandaRedes()}`;
+}
+function miembroJunta(m,i){
+  const foto = m.imagen
+    ? `<img class="junta-foto" src="${esc(m.imagen)}" alt="${esc(m.nombre)}" loading="lazy">`
+    : `<div class="junta-ini i${i%3}" aria-hidden="true">${esc((m.nombre||"?").trim().charAt(0).toUpperCase())}</div>`;
+  return `<article class="junta-miembro">${foto}<h3>${esc(m.nombre)}</h3><span class="chip sol">${esc(m.cargo)}</span></article>`;
+}
+async function vistaJunta(){
+  const l = (await leer("junta")).sort((a,b)=>(a.orden??99)-(b.orden??99) || String(a.nombre).localeCompare(String(b.nombre)));
+  const a = S.ajustes;
+  return `<section class="contenedor pagina"><h1 class="h-pag">La junta</h1>
+    ${a.juntaMandato?`<p class="intro" style="margin-bottom:10px"><strong>${esc(a.juntaMandato)}</strong></p>`:""}
+    <p class="intro" style="margin-bottom:40px">Estas son las personas que forman la junta de la asociación.</p>
+    ${l.length?`<div class="junta-grid">${l.map(miembroJunta).join("")}</div>`:vacio("Todavía no se ha publicado la junta","Aquí aparecerán los cargos y las personas que forman la junta.")}
+    ${a.email?`<p style="margin-top:48px">Para hablar con la junta, escribe a <a href="mailto:${esc(a.email)}">${esc(a.email)}</a>.</p>`:""}</section>`;
 }
 async function vistaProyectos(){
   const ps = ordenProyectos(await leer("proyectos"));
@@ -858,7 +889,7 @@ function resultadosHTML(ops, counts, total){
 /* ============================================================
    Panel de la junta
    ============================================================ */
-const PESTANAS = [["socios","Socios"],["noticias","Noticias"],["actividades","Actividades"],["proyectos","Proyectos"],["encuestas","Encuestas"],["web","Web"]];
+const PESTANAS = [["socios","Socios"],["noticias","Noticias"],["actividades","Actividades"],["proyectos","Proyectos"],["junta","La junta"],["encuestas","Encuestas"],["web","Web"]];
 async function vistaAdmin(){
   if(!esAdmin()) return avisoAcceso("Esta zona es solo para la junta directiva.");
   const D = S.adm.datos, tab = S.adm.tab;
@@ -867,8 +898,9 @@ async function vistaAdmin(){
   if(tab==="proyectos") D.proyectos = await leer("proyectos");
   if(tab==="encuestas") D.encuestas = await leer("encuestas");
   if(tab==="noticias") D.noticias = await leerNoticias();
+  if(tab==="junta") D.junta = await leer("junta");
   const pend = D.socios.filter(u=>u.estado==="pendiente").length;
-  const cuerpo = {socios:admSocios, noticias:admNoticias, actividades:admActividades, proyectos:admProyectos, encuestas:admEncuestas, web:admWeb}[tab]();
+  const cuerpo = {socios:admSocios, noticias:admNoticias, actividades:admActividades, proyectos:admProyectos, junta:admJunta, encuestas:admEncuestas, web:admWeb}[tab]();
   return `<section class="contenedor pagina"><h1 class="h-pag">Panel de la junta</h1>
     <div class="pestanas">${PESTANAS.map(([k,t])=>`<button class="pest" data-accion="pestana" data-id="${k}" ${tab===k?'aria-current="true"':""}>${t}${k==="socios"&&pend?` (${pend})`:""}</button>`).join("")}</div>
     ${cuerpo}</section>`;
@@ -1037,6 +1069,25 @@ function admEncuestas(){
           ${e.abierta&&r?`<div class="apuntados" style="flex-basis:100%">${resultadosHTML(e.opciones,r.counts,r.total)}</div>`:""}
           ${!e.abierta?`<div style="flex-basis:100%">${resultadosHTML(e.opciones,e.resultados||[],e.totalVotos||0)}</div>`:""}</li>`;}).join("")}</ul>`:"<p>Todavía no has lanzado ninguna encuesta.</p>"}</div></div>`;
 }
+function admJunta(){
+  const D = S.adm.datos, ed = D.junta.find(x=>x.id===S.adm.edit)||{};
+  const lista = [...D.junta].sort((a,b)=>(a.orden??99)-(b.orden??99) || String(a.nombre).localeCompare(String(b.nombre)));
+  return `<div class="adm-grid">
+    <div id="form-adm"><h2 style="font-size:1.8rem">${ed.id?"Editar miembro":"Nuevo miembro"}</h2>
+      <form class="formu" data-form="junta">
+        <input type="hidden" name="id" value="${esc(ed.id||"")}">
+        <div class="campo"><label for="jn-cargo">Cargo</label><input id="jn-cargo" name="cargo" required maxlength="60" list="cargos" value="${esc(ed.cargo||"")}">
+          <datalist id="cargos"><option value="Presidencia"><option value="Vicepresidencia"><option value="Secretaría"><option value="Tesorería"><option value="Vocalía"></datalist></div>
+        <div class="campo"><label for="jn-nombre">Nombre y apellidos</label><input id="jn-nombre" name="nombre" required maxlength="100" value="${esc(ed.nombre||"")}"></div>
+        <div class="campo"><label for="jn-orden">Orden en la página</label><input id="jn-orden" name="orden" type="number" min="1" value="${ed.orden ?? (lista.length+1)}"><small>1 sale el primero. Si dos tienen el mismo número, salen por orden alfabético.</small></div>
+        ${campoImagen(ed,"Foto (opcional)")}
+        <div class="acciones" style="margin:0"><button class="btn" type="submit">${ed.id?"Guardar cambios":"Añadir a la junta"}</button>${ed.id?`<button type="button" class="btn sec" data-accion="cancelar">Cancelar</button>`:""}</div>
+      </form></div>
+    <div><h2 style="font-size:1.8rem">Miembros de la junta</h2>
+      <p class="suave" style="margin-top:8px">Se muestran en la página pública «La junta». Para cambiar el texto del mandato, ve a la pestaña Web.</p>
+      ${lista.length?`<ul class="lista-adm">${lista.map(m=>`<li><div class="cuerpo"><strong>${esc(m.nombre)}</strong> <span class="chip sol">${esc(m.cargo)}</span><br><span class="suave">Orden ${m.orden ?? "—"}</span></div>
+        <div class="btns"><button class="btn peq sec" data-accion="editar" data-id="${m.id}">Editar</button><button class="btn peq peligro" data-accion="borrar" data-id="${m.id}" data-col="junta">Eliminar</button></div></li>`).join("")}</ul>`:"<p>Todavía no has añadido a nadie.</p>"}</div></div>`;
+}
 function admWeb(){
   const a = S.ajustes;
   return `<div class="panel-adm" style="max-width:640px"><h2>Datos de la web</h2>
@@ -1055,6 +1106,8 @@ function admWeb(){
         <div class="campo"><label for="iban">IBAN de la asociación</label><input id="iban" name="iban" value="${esc(a.iban)}" placeholder="ES00 0000 0000 0000 0000 0000"></div>
       </div>
       <div class="campo"><label for="juntaCobro">Miembros de la junta que pueden cobrar en metálico</label><textarea id="juntaCobro" name="juntaCobro" placeholder="Un nombre por línea">${esc(a.juntaCobro)}</textarea><small>Quien pague en metálico elegirá uno de estos nombres. Si lo dejas vacío, escribirá el nombre a mano.</small></div>
+      <h3 style="margin-top:12px">Página de la junta</h3>
+      <div class="campo"><label for="juntaMandato">Mandato de la junta (opcional)</label><input id="juntaMandato" name="juntaMandato" value="${esc(a.juntaMandato)}" placeholder="Junta elegida para 2025-2027"><small>Se muestra en la página «La junta».</small></div>
       <h3 style="margin-top:12px">Redes sociales</h3>
       <div class="fila-campos">${REDES.map(([k,t])=>`<div class="campo"><label for="red-${k}">${t}</label><input id="red-${k}" name="red-${k}" placeholder="https://..." value="${esc(a.redes[k])}"></div>`).join("")}</div>
       <div><button class="btn" type="submit">Guardar cambios</button></div>
@@ -1313,6 +1366,13 @@ const FORMS = {
     await updateDoc(doc(db,"socios",S.user.uid), leerPago(fd));
     S.perfil = await cargarPerfil(S.user); toast("Forma de pago guardada"); refrescar();
   },
+  async junta(f,fd){
+    const id = fd.get("id"), previo = S.adm.datos.junta.find(x=>x.id===id);
+    const datos = {cargo:fd.get("cargo").trim(), nombre:fd.get("nombre").trim(), orden:Math.max(1,parseInt(fd.get("orden"))||1), imagen:await imagenDeFormulario(fd, previo?.imagen, 600)};
+    if(id) await updateDoc(doc(db,"junta",id),datos);
+    else await addDoc(collection(db,"junta"),{...datos, creado:serverTimestamp()});
+    S.adm.edit = null; toast(id?"Cambios guardados":"Miembro añadido a la junta"); refrescar();
+  },
   async fechaAlta(f,fd){
     const v = fd.get("fecha");
     if(!/^\d{4}-\d{2}-\d{2}$/.test(v||"") || v>hoyISO()) return toast("Escribe una fecha válida, que no sea futura","error");
@@ -1370,7 +1430,7 @@ const FORMS = {
   },
   async ajustes(f,fd){
     const redes = {}; REDES.forEach(([k])=>redes[k]=fd.get("red-"+k).trim());
-    const datos = {nombre:fd.get("nombre").trim(), lema:fd.get("lema").trim(), descripcion:fd.get("descripcion").trim(), email:fd.get("email").trim(), telefono:fd.get("telefono").trim(), whatsappContacto:fd.get("whatsappContacto").trim(), direccion:fd.get("direccion").trim(), cuota:fd.get("cuota").trim(), iban:fd.get("iban").trim(), juntaCobro:fd.get("juntaCobro").trim(), redes};
+    const datos = {nombre:fd.get("nombre").trim(), lema:fd.get("lema").trim(), descripcion:fd.get("descripcion").trim(), email:fd.get("email").trim(), telefono:fd.get("telefono").trim(), whatsappContacto:fd.get("whatsappContacto").trim(), direccion:fd.get("direccion").trim(), cuota:fd.get("cuota").trim(), iban:fd.get("iban").trim(), juntaCobro:fd.get("juntaCobro").trim(), juntaMandato:fd.get("juntaMandato").trim(), redes};
     await setDoc(doc(db,"config","web"),datos);
     S.ajustes = {...AJUSTES_POR_DEFECTO, ...datos}; toast("Cambios guardados"); refrescar();
   }
@@ -1406,7 +1466,7 @@ async function ruta(){
   document.title = S.ajustes.nombre;
   let html;
   try{
-    html = await ({inicio:vistaInicio, proyectos:vistaProyectos, noticias:vistaNoticias, actividades:vistaActividades, encuestas:vistaEncuestas, cuenta:vistaCuenta, admin:vistaAdmin, entrar:()=>vistaEntrar(query==="registro"?"registro":"entrar")}[key] || vistaInicio)();
+    html = await ({inicio:vistaInicio, proyectos:vistaProyectos, noticias:vistaNoticias, junta:vistaJunta, actividades:vistaActividades, encuestas:vistaEncuestas, cuenta:vistaCuenta, admin:vistaAdmin, entrar:()=>vistaEntrar(query==="registro"?"registro":"entrar")}[key] || vistaInicio)();
   }catch(err){
     console.error(err);
     html = `<section class="contenedor pagina"><div class="error-caja"><strong>No se han podido cargar los datos.</strong><br>${esc(errMsg(err))}<br>Revisa que las reglas de Firestore estén publicadas y que tu cuenta tenga permiso.</div></section>`;
