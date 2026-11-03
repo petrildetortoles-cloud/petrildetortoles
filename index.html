@@ -577,8 +577,15 @@ function _zip(archivos){
 }
 const _xml = t => String(t).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 function _colLetra(i){ let s = "", n = i+1; while(n>0){ const r = (n-1)%26; s = String.fromCharCode(65+r)+s; n = Math.floor((n-1)/26); } return s; }
-function crearXlsx(hoja, cabeceras, filas, anchos=[]){
-  const nombreHoja = String(hoja).replace(/[\[\]:*?\/\\]/g," ").slice(0,31) || "Hoja1";
+function crearLibro(hojas){
+  const usados = new Set();
+  const lista = hojas.map((h,i)=>{
+    let nombre = String(h.nombre).replace(/[\[\]:*?\/\\]/g," ").trim().slice(0,31) || `Hoja${i+1}`; const base = nombre; let k = 2;
+    while(usados.has(nombre.toLowerCase())) nombre = `${base.slice(0,28)} ${k++}`;
+    usados.add(nombre.toLowerCase()); return {...h, nombre};
+  });
+  const NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main", REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+  const cab = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
   const celda = (v,c,r,estilo) => {
     const ref = _colLetra(c)+r, s = estilo ? ` s="${estilo}"` : "";
     if(v===null || v===undefined || v==="") return estilo ? `<c r="${ref}"${s}/>` : "";
@@ -586,21 +593,24 @@ function crearXlsx(hoja, cabeceras, filas, anchos=[]){
     return `<c r="${ref}"${s} t="inlineStr"><is><t xml:space="preserve">${_xml(v)}</t></is></c>`;
   };
   const fila = (f,r,estilo) => `<row r="${r}"${estilo?' ht="30" customHeight="1"':""}>${f.map((v,c)=>celda(v,c,r,estilo)).join("")}</row>`;
-  const datos = [fila(cabeceras,1,1), ...filas.map((f,i)=>fila(f,i+2,0))].join("");
-  const ultima = _colLetra(cabeceras.length-1) + (filas.length+1);
-  const cols = cabeceras.map((_,i)=>`<col min="${i+1}" max="${i+1}" width="${anchos[i]||18}" customWidth="1"/>`).join("");
-  const NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main", REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
-  const cab = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
-  const archivos = {
-    "[Content_Types].xml": `${cab}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`,
-    "_rels/.rels": `${cab}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${REL}/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
-    "xl/workbook.xml": `${cab}<workbook xmlns="${NS}" xmlns:r="${REL}"><sheets><sheet name="${_xml(nombreHoja)}" sheetId="1" r:id="rId1"/></sheets></workbook>`,
-    "xl/_rels/workbook.xml.rels": `${cab}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${REL}/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="${REL}/styles" Target="styles.xml"/></Relationships>`,
-    "xl/styles.xml": `${cab}<styleSheet xmlns="${NS}"><fonts count="2"><font><sz val="11"/><name val="Arial"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Arial"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF14604C"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`,
-    "xl/worksheets/sheet1.xml": `${cab}<worksheet xmlns="${NS}"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>${cols}</cols><sheetData>${datos}</sheetData><autoFilter ref="A1:${ultima}"/></worksheet>`
+  const hojaXml = h => {
+    const datos = [fila(h.cabeceras,1,1), ...h.filas.map((f,i)=>fila(f,i+2,0))].join("");
+    const ultima = _colLetra(h.cabeceras.length-1) + (h.filas.length+1);
+    const cols = h.cabeceras.map((_,i)=>`<col min="${i+1}" max="${i+1}" width="${(h.anchos||[])[i]||18}" customWidth="1"/>`).join("");
+    return `${cab}<worksheet xmlns="${NS}"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>${cols}</cols><sheetData>${datos}</sheetData>${h.sinFiltro?"":`<autoFilter ref="A1:${ultima}"/>`}</worksheet>`;
   };
+  const n = lista.length;
+  const archivos = {
+    "[Content_Types].xml": `${cab}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${lista.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`,
+    "_rels/.rels": `${cab}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${REL}/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
+    "xl/workbook.xml": `${cab}<workbook xmlns="${NS}" xmlns:r="${REL}"><sheets>${lista.map((h,i)=>`<sheet name="${_xml(h.nombre)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join("")}</sheets></workbook>`,
+    "xl/_rels/workbook.xml.rels": `${cab}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${lista.map((_,i)=>`<Relationship Id="rId${i+1}" Type="${REL}/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join("")}<Relationship Id="rId${n+1}" Type="${REL}/styles" Target="styles.xml"/></Relationships>`,
+    "xl/styles.xml": `${cab}<styleSheet xmlns="${NS}"><fonts count="2"><font><sz val="11"/><name val="Arial"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Arial"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF14604C"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`
+  };
+  lista.forEach((h,i)=>{ archivos[`xl/worksheets/sheet${i+1}.xml`] = hojaXml(h); });
   return _zip(Object.entries(archivos).map(([nombre,txt])=>({nombre, datos:_enc.encode(txt)})));
 }
+function crearXlsx(hoja, cabeceras, filas, anchos=[]){ return crearLibro([{nombre:hoja, cabeceras, filas, anchos}]); }
 function descargarXlsx(nombre, bytes){
   const url = URL.createObjectURL(new Blob([bytes],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
   const a = document.createElement("a"); a.href = url; a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
@@ -632,30 +642,37 @@ async function leerXlsx(buf){
   const z = await _leerZip(buf), xml = t => new DOMParser().parseFromString(t,"application/xml");
   const comunes = [], txtComp = await z.leer("xl/sharedStrings.xml");
   if(txtComp) for(const si of xml(txtComp).getElementsByTagName("si")) comunes.push([...si.getElementsByTagName("t")].map(t=>t.textContent).join(""));
-  let hoja = "xl/worksheets/sheet1.xml";
-  if(!z.nombres.includes(hoja)){
-    const l = z.nombres.filter(n=>/^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort();
-    if(!l.length) throw new Error("No encuentro ninguna hoja en el Excel.");
-    hoja = l[0];
-  }
-  const filas = [];
-  for(const row of xml(await z.leer(hoja)).getElementsByTagName("row")){
-    const f = [];
-    for(const c of row.getElementsByTagName("c")){
-      const letras = (c.getAttribute("r")||"").replace(/\d/g,""); let col = 0;
-      for(const ch of letras) col = col*26 + (ch.charCodeAt(0)-64);
-      col--; if(col<0) col = f.length;
-      const t = c.getAttribute("t"); let v = null;
-      if(t==="inlineStr") v = [...c.getElementsByTagName("t")].map(x=>x.textContent).join("");
-      else {
-        const ve = c.getElementsByTagName("v")[0];
-        if(ve){ const raw = ve.textContent; v = t==="s" ? (comunes[Number(raw)] ?? "") : (t==="str"||t==="e" ? raw : (t==="b" ? (raw==="1"?"Sí":"No") : Number(raw))); }
+  const hojas = z.nombres.filter(n=>/^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort((a,b)=>Number(a.match(/\d+/)[0])-Number(b.match(/\d+/)[0]));
+  if(!hojas.length) throw new Error("No encuentro ninguna hoja en el Excel.");
+  const leerHoja = async nombre => {
+    const filas = [];
+    for(const row of xml(await z.leer(nombre)).getElementsByTagName("row")){
+      const f = [];
+      for(const c of row.getElementsByTagName("c")){
+        const letras = (c.getAttribute("r")||"").replace(/\d/g,""); let col = 0;
+        for(const ch of letras) col = col*26 + (ch.charCodeAt(0)-64);
+        col--; if(col<0) col = f.length;
+        const t = c.getAttribute("t"); let v = null;
+        if(t==="inlineStr") v = [...c.getElementsByTagName("t")].map(x=>x.textContent).join("");
+        else {
+          const ve = c.getElementsByTagName("v")[0];
+          if(ve){ const raw = ve.textContent; v = t==="s" ? (comunes[Number(raw)] ?? "") : (t==="str"||t==="e" ? raw : (t==="b" ? (raw==="1"?"Sí":"No") : Number(raw))); }
+        }
+        if(v!==null) f[col] = v;
       }
-      if(v!==null) f[col] = v;
+      const r = Number(row.getAttribute("r"))-1; filas[r>=0 ? r : filas.length] = f;
     }
-    const r = Number(row.getAttribute("r"))-1; filas[r>=0 ? r : filas.length] = f;
-  }
-  return Array.from(filas, f => Array.from(f||[], v => v ?? ""));
+    return Array.from(filas, f => Array.from(f||[], v => v ?? ""));
+  };
+  const tablas = []; for(const h of hojas) tablas.push(await leerHoja(h));
+  /* Si el libro tiene varias pestañas, se usan las que parecen una lista de socios (con Nombre y Apellidos) */
+  const cabeceraDe = t => t.find(f=>f.some(c=>String(c).trim()!==""));
+  const esSocios = t => { const cab = cabeceraDe(t); if(!cab) return false; const n = cab.map(c=>xlNorm(c)); return n.includes("nombre") && n.some(x=>x.includes("apellido")); };
+  const validas = tablas.filter(esSocios);
+  if(validas.length<=1) return validas[0] || tablas[0];
+  const cabecera = cabeceraDe(validas[0]), clave = JSON.stringify(cabecera.map(c=>xlNorm(c))), unidas = [cabecera];
+  for(const t of validas){ const idx = t.indexOf(cabeceraDe(t)); if(JSON.stringify(t[idx].map(c=>xlNorm(c)))===clave) unidas.push(...t.slice(idx+1)); }
+  return unidas;
 }
 function leerCsv(texto){
   texto = texto.replace(/^\uFEFF/,"");
@@ -782,43 +799,82 @@ async function prepararImportacion(archivo, opciones){
   return filas;
 }
 
-/* ---------- Exportar a Excel ---------- */
+/* ---------- Exportar a Excel: cada grupo en su pestaña ---------- */
 const estadoTxt = x => ({aprobado:"Activo", pendiente:"Pendiente de aprobación", rechazado:"Baja o rechazado"}[x.estado] || x.estado || "");
 const cuotaTxt = x => x.estado!=="aprobado" ? "" : (cuotaGratis(x) ? "Gratuita" : (cuotaAlDia(x) ? "Al día" : (x.cuotaAnio ? "Pendiente de renovar" : "Sin pagar")));
+const NOMBRE_CATEGORIA = {adulto:"Adulto", joven:"12 a 17 años", infantil:"Menor de 12", sin:"Sin fecha de nacimiento"};
+const categoriaDe = x => x && x.nacimiento ? tramo(x.nacimiento) : "sin";
 async function exportarSocios(conSensibles){
   const socios = [...S.adm.datos.socios], mapa = Object.fromEntries(socios.map(x=>[x.id,x]));
   const privs = conSensibles ? await Promise.all(socios.map(async s=>{ try{ const sn = await getDoc(doc(db,"socios",s.id,"privado","datos")); return sn.exists() ? sn.data() : {}; } catch{ return {}; } })) : socios.map(()=>({}));
-  const orden = socios.map((s,i)=>({s, p:privs[i]})).sort((a,b)=>(a.s.numero||1e9)-(b.s.numero||1e9) || String(a.s.apellidos).localeCompare(String(b.s.apellidos),"es"));
-  const cab = ["Nº socio","Nombre","Apellidos","Móvil","Correo","Fecha de nacimiento","Edad","Estado",`Cuota ${ANIO}`,"Socio desde","Unidad familiar de","Administrador","Consentimiento"];
-  const anchos = [10,16,26,14,30,18,8,24,20,14,30,14,15];
+  const orden = socios.map((s,i)=>({s, p:privs[i]})).sort((a,b)=>String(a.s.apellidos).localeCompare(String(b.s.apellidos),"es") || String(a.s.nombre).localeCompare(String(b.s.nombre),"es"));
+  const cab = ["Nº socio","Nombre","Apellidos","Categoría","Móvil","Correo","Fecha de nacimiento","Edad","Estado",`Cuota ${ANIO}`,"Socio desde","Unidad familiar de","Administrador","Consentimiento"];
+  const anchos = [10,16,26,22,14,30,18,8,24,22,14,30,14,15];
   if(conSensibles){ cab.push("DNI","Lugar de residencia","Cuenta para domiciliar"); anchos.push(14,32,32); }
-  const filas = orden.map(({s,p})=>{
+  const fila = ({s,p}) => {
     const t = s.titularId ? mapa[s.titularId] : null;
-    const f = [s.numero ?? "", s.nombre||"", s.apellidos||"", s.movil||"", s.email||"", s.nacimiento||"", s.nacimiento ? edad(s.nacimiento) : "", estadoTxt(s), cuotaTxt(s), fechaAlta(s)||"", t ? `nº ${t.numero||"?"} ${t.nombre||""} ${t.apellidos||""}`.trim() : "", s.rol==="admin" ? "Sí" : "", s.consentimiento ? "Sí" : ""];
+    const f = [s.numero ?? "", s.nombre||"", s.apellidos||"", NOMBRE_CATEGORIA[categoriaDe(s)], s.movil||"", s.email||"", s.nacimiento||"", s.nacimiento ? edad(s.nacimiento) : "", estadoTxt(s), cuotaTxt(s), fechaAlta(s)||"", t ? `nº ${t.numero||"?"} ${t.nombre||""} ${t.apellidos||""}`.trim() : "", s.rol==="admin" ? "Sí" : "", s.consentimiento ? "Sí" : ""];
     if(conSensibles) f.push(p.dni||"", p.residencia||"", p.ibanDomiciliacion ? ibanBonito(p.ibanDomiciliacion) : "");
     return f;
-  });
-  descargarXlsx(`socios-${hoyISO()}.xlsx`, crearXlsx("Socios", cab, filas, anchos));
-  return filas.length;
+  };
+  const grupos = {adulto:[], joven:[], infantil:[], pendiente:[], baja:[]};
+  for(const it of orden){
+    const e = it.s.estado;
+    if(e==="aprobado"){ const c = categoriaDe(it.s); grupos[c==="sin" ? "adulto" : c].push(it); }
+    else if(e==="pendiente") grupos.pendiente.push(it); else grupos.baja.push(it);
+  }
+  const alDia = l => l.filter(it=>cuotaAlDia(it.s)).length;
+  const activos = [...grupos.adulto, ...grupos.joven, ...grupos.infantil];
+  const resumen = [
+    ["Socios activos adultos (18 o más)", grupos.adulto.length, alDia(grupos.adulto), grupos.adulto.length-alDia(grupos.adulto)],
+    ["Socios activos de 12 a 17 años", grupos.joven.length, alDia(grupos.joven), grupos.joven.length-alDia(grupos.joven)],
+    ["Socios activos menores de 12 (cuota gratuita)", grupos.infantil.length, alDia(grupos.infantil), grupos.infantil.length-alDia(grupos.infantil)],
+    ["TOTAL SOCIOS ACTIVOS", activos.length, alDia(activos), activos.length-alDia(activos)],
+    ["Pendientes de aprobación (todavía no son socios)", grupos.pendiente.length, "", ""],
+    ["Bajas o rechazados (ya no son socios)", grupos.baja.length, "", ""],
+    ["", "", "", ""],
+    ["Exportado el", hoyISO(), "", ""],
+    ["Nota", `Las categorías se calculan con la edad que se cumple en ${ANIO}. Cada grupo está en su pestaña.`, "", ""]
+  ];
+  const hojas = [{nombre:"Resumen", cabeceras:["Grupo","Personas",`Cuota ${ANIO} al día o gratuita`,"Cuota pendiente o sin pagar"], filas:resumen, anchos:[48,50,26,26], sinFiltro:true}];
+  for(const [nombre,clave] of [["Adultos","adulto"],["12 a 17 años","joven"],["Menores de 12","infantil"],["Pendientes","pendiente"],["Bajas","baja"]]){
+    if(grupos[clave].length) hojas.push({nombre, cabeceras:cab, filas:grupos[clave].map(fila), anchos});
+  }
+  descargarXlsx(`socios-${hoyISO()}.xlsx`, crearLibro(hojas));
+  return orden.length;
 }
 function filasApuntados(a){
   const usuarios = Object.fromEntries(S.adm.datos.socios.map(x=>[x.id,x])), ext = S.adm.externos[a.id] || [], filas = [];
   for(const [hid,ids] of Object.entries(a.inscritos||{})){
     const cab = usuarios[hid] || {}, socio = cab.estado==="aprobado", precio = socio ? a.precioSocio : a.precioNoSocio;
     for(const id of ids){
-      const x = usuarios[id] || {};
-      filas.push([x.numero ?? "", x.nombre || "Persona eliminada", x.apellidos || "", socio ? "Socio" : "No socio", id!==hid && cab.nombre ? `nº ${cab.numero||"?"} ${cab.nombre} ${cab.apellidos||""}`.trim() : "", x.movil || cab.movil || "", typeof precio==="number" ? precio : "", "", ""]);
+      const x = usuarios[id] || {}, cat = categoriaDe(x);
+      filas.push({numero:x.numero ?? "", nombre:x.nombre || "Persona eliminada", apellidos:x.apellidos || "", tipo:socio?"Socio":"No socio", grupo:socio ? (cat==="sin" ? "adulto" : cat) : "nosocio", categoria:NOMBRE_CATEGORIA[cat], familia:id!==hid && cab.nombre ? `nº ${cab.numero||"?"} ${cab.nombre} ${cab.apellidos||""}`.trim() : "", movil:x.movil || cab.movil || "", importe:typeof precio==="number" ? precio : ""});
     }
   }
-  for(const e of ext) filas.push(["", e.nombre||"", e.apellidos||"", "No socio", "", e.telefono||"", typeof a.precioNoSocio==="number" ? a.precioNoSocio : "", "", ""]);
-  return filas.sort((p,q)=>String(p[2]).localeCompare(String(q[2]),"es") || String(p[1]).localeCompare(String(q[1]),"es"));
+  for(const e of ext) filas.push({numero:"", nombre:e.nombre||"", apellidos:e.apellidos||"", tipo:"No socio", grupo:"nosocio", categoria:"Sin indicar", familia:"", movil:e.telefono||"", importe:typeof a.precioNoSocio==="number" ? a.precioNoSocio : ""});
+  return filas.sort((p,q)=>String(p.apellidos).localeCompare(String(q.apellidos),"es") || String(p.nombre).localeCompare(String(q.nombre),"es"));
 }
 function exportarApuntados(a){
-  const cab = ["Nº socio","Nombre","Apellidos","Tipo","Unidad familiar de","Móvil o teléfono","Importe a cobrar (€)","Pagado","Ha asistido"];
-  const filas = filasApuntados(a);
+  const personas = filasApuntados(a);
+  const cab = ["Nº socio","Nombre","Apellidos","Tipo","Categoría","Unidad familiar de","Móvil o teléfono","Importe a cobrar (€)","Pagado","Ha asistido"];
+  const anchos = [10,16,26,12,22,30,18,20,10,12];
+  const fila = p => [p.numero, p.nombre, p.apellidos, p.tipo, p.categoria, p.familia, p.movil, p.importe, "", ""];
+  const defs = [["Socios adultos","adulto","Socios adultos (18 o más)"],["Socios 12 a 17","joven","Socios de 12 a 17 años"],["Socios menores de 12","infantil","Socios menores de 12"],["No socios","nosocio","No socios"]];
+  const resumen = [];
+  let total = 0, importe = 0, hayImporte = false;
+  for(const [, clave, etiqueta] of defs){
+    const l = personas.filter(p=>p.grupo===clave), imp = l.reduce((t,p)=>t+(typeof p.importe==="number"?p.importe:0),0);
+    total += l.length; if(l.some(p=>typeof p.importe==="number")){ hayImporte = true; importe += imp; }
+    resumen.push([etiqueta, l.length, l.some(p=>typeof p.importe==="number") ? imp : ""]);
+  }
+  resumen.push(["TOTAL", total, hayImporte ? importe : ""], ["","",""], ["Actividad", a.titulo||"", ""], ["Fecha", a.fecha ? fechaLarga(new Date(a.fecha)) : "", ""], ["Lugar", a.lugar||"", ""]);
+  if(personas.some(p=>p.categoria==="Sin indicar")) resumen.push(["Nota","De los no socios no se pide la edad, por eso su categoría figura como «Sin indicar».",""]);
+  const hojas = [{nombre:"Resumen", cabeceras:["Grupo","Personas","Importe a cobrar (€)"], filas:resumen, anchos:[34,50,22], sinFiltro:true}];
+  for(const [nombre, clave] of defs){ const l = personas.filter(p=>p.grupo===clave); if(l.length) hojas.push({nombre, cabeceras:cab, filas:l.map(fila), anchos}); }
   const limpio = String(a.titulo||"actividad").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40);
-  descargarXlsx(`apuntados-${limpio}-${String(a.fecha||"").slice(0,10)}.xlsx`, crearXlsx("Apuntados", cab, filas, [10,16,26,12,30,18,20,10,12]));
-  return filas.length;
+  descargarXlsx(`apuntados-${limpio}-${String(a.fecha||"").slice(0,10)}.xlsx`, crearLibro(hojas));
+  return personas.length;
 }
 
 /* ============================================================
