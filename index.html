@@ -126,7 +126,7 @@ nav .entrar{background:var(--btn-bg);color:var(--btn-fg);margin-left:6px}
 .ticket-b{height:92px;border-top:2px dashed var(--sobre-sol);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 30px;font-weight:600;font-size:.95rem}
 
 /* Secciones */
-.seccion{padding:72px 0}
+.seccion{padding-top:72px;padding-bottom:72px}
 .seccion-cab{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:32px}
 
 /* Programa */
@@ -208,6 +208,7 @@ footer{padding:28px 0 40px;font-size:.9rem;color:var(--suave)}
 .apuntados ul{margin:6px 0 0;padding-left:1.2em}
 .panel-adm h2{margin-bottom:6px}
 
+.lista-adm li[hidden]{display:none}
 .lista-adm .apuntados li{border:0;padding:3px 0;display:list-item}
 .chk{display:flex;gap:10px;align-items:center;font-weight:500;cursor:pointer}
 .chk input{accent-color:var(--marca);width:1.1rem;height:1.1rem;flex:none}
@@ -222,10 +223,47 @@ footer{padding:28px 0 40px;font-size:.9rem;color:var(--suave)}
 .noticia-c p{color:var(--suave)}
 .noticia-c .n-cab{color:var(--tinta)}
 
+/* Ficha del socio y fecha de alta */
+.ficha{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px 20px;margin:18px 0 6px;padding:18px 0;border-top:2px solid var(--tinta);border-bottom:1px solid var(--linea)}
+.ficha dt{font-size:.85rem;font-weight:600;color:var(--suave)}
+.ficha dd{margin:2px 0 0;font:700 1.2rem/1.2 "Bricolage Grotesque",sans-serif}
+.mini{margin-top:6px}
+.mini summary{cursor:pointer;color:var(--marca);font-size:.9rem}
+.mini form{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.mini input{padding:.4em .6em;border:2px solid var(--tinta);border-radius:6px;background:var(--papel);color:var(--tinta);font:inherit}
+
+/* Forma de pago */
+.pago{border:0;margin:0;padding:0;display:grid;gap:12px}
+.pago legend{font-weight:600;font-size:1rem;padding:0;margin-bottom:6px}
+.pago-op .detalle{display:none;padding:12px 4px 0 40px}
+.pago-op:has(input[type=radio]:checked) .detalle{display:block}
+.pago-op .detalle p{margin:0 0 8px}
+.pago-op select,.pago-op input[name=receptor]{width:100%;max-width:360px;padding:.6em .7em;border:2px solid var(--tinta);border-radius:6px;background:var(--papel);color:var(--tinta);font:inherit}
+
+/* Cuota de socio */
+.cuota{background:var(--marca-claro);border-left:6px solid var(--sol);padding:16px 20px;margin:20px 0;max-width:62ch}
+.cuota p{margin:0 0 8px}
+.cuota p:last-child{margin-bottom:0}
+.iban{font:800 1.35rem/1.2 "Bricolage Grotesque",sans-serif;letter-spacing:.03em;overflow-wrap:anywhere}
+
+/* Carteles de actividades */
+.carteles{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:44px 32px;align-items:start}
+.cartel-marco{position:relative;border:2px solid var(--tinta);background:var(--marca-claro)}
+.cartel-img{display:block;width:100%;height:auto}
+.cartel-fecha{position:absolute;left:-2px;bottom:18px;background:var(--sol);color:var(--sobre-sol);font:800 1.15rem/1 "Bricolage Grotesque",sans-serif;letter-spacing:-.02em;padding:9px 14px}
+.cartel-sin{aspect-ratio:3/4;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;padding:22px;background:var(--banda-bg);color:var(--banda-fg)}
+.cs-dia{font:800 5rem/.85 "Bricolage Grotesque",sans-serif;letter-spacing:-.05em}
+.cs-mes{font-weight:600;font-size:1.1rem}
+.cartel-cuerpo{padding-top:16px}
+.cartel-cuerpo h3{margin-bottom:6px}
+.cartel-acc{margin-top:12px}
+.cartel-hero{display:block;position:relative;width:fit-content;max-width:100%;margin:0 auto;transform:rotate(-2deg);border:2px solid var(--tinta);box-shadow:10px 10px 0 var(--sol)}
+.cartel-hero img{display:block;max-width:100%;max-height:560px;width:auto;height:auto}
+
 /* Imágenes de noticias y actividades */
 .n-img{display:block;width:100%;max-height:380px;object-fit:cover;margin:14px 0 6px}
 .n-img-c{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;margin-bottom:14px}
-.a-img{display:block;width:100%;max-width:440px;max-height:280px;object-fit:cover;margin:12px 0 4px}
+.a-img{display:block;width:auto;max-width:100%;max-height:420px;margin:12px 0 4px;border:2px solid var(--tinta)}
 .miniatura{display:block;max-width:180px;max-height:120px;object-fit:cover;margin-top:8px;border:1px solid var(--linea)}
 
 .f-panel{grid-column:2/-1;background:var(--marca-claro);padding:18px 20px;margin-top:4px;display:grid;gap:12px}
@@ -248,20 +286,19 @@ footer{padding:28px 0 40px;font-size:.9rem;color:var(--suave)}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ============================================================
    1) CONFIGURACIÓN: pega aquí los datos de tu proyecto Firebase
    (Firebase Console > Configuración del proyecto > Tus apps > Web)
    ============================================================ */
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyAQTR4C8SD__CniLsHxCd06oaWXGWsgB8M",
-  authDomain: "petrildetortoles-d8f0a.firebaseapp.com",
-  projectId: "petrildetortoles-d8f0a",
-  storageBucket: "petrildetortoles-d8f0a.firebasestorage.app",
-  messagingSenderId: "304613396583",
-  appId: "1:304613396583:web:27822f6717459d8deec4c2",
-  measurementId: "G-XS6700PVQB"
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
 };
 
 /* Paleta de colores: "pino" (verde y coral), "ciruela" (frambuesa y albaricoque) o "ladrillo" (teja y ocre) */
@@ -286,7 +323,7 @@ const AJUSTES_POR_DEFECTO = {
   nombre: "El Petril de Tórtoles",
   lema: "Asociación cultural",
   descripcion: "Somos la asociación cultural El Petril de Tórtoles. Organizamos actividades abiertas a todo el mundo. Aquí puedes ver lo que hemos hecho y lo que viene, y si eres socio, apuntarte y opinar.",
-  email: "petrildetortoles@gmail.com", telefono: "", whatsappContacto: "605086688", direccion: "",
+  email: "petrildetortoles@gmail.com", telefono: "", whatsappContacto: "605086688", direccion: "", iban: "", cuota: "", juntaCobro: "",
   redes: { instagram:"https://www.instagram.com/petrildetortoles/", facebook:"https://www.facebook.com/p/El-Petril-de-T%C3%B3rtoles-61559645693769/", youtube:"", tiktok:"", x:"", whatsapp:"https://www.whatsapp.com/channel/0029Vb52hyOGpLHTpZS1Lx1q", web:"" }
 };
 const REDES = [["instagram","Instagram"],["facebook","Facebook"],["youtube","YouTube"],["tiktok","TikTok"],["x","X"],["whatsapp","Canal de WhatsApp"],["web","Otra web"]];
@@ -303,6 +340,36 @@ const hora = d => d.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"}
 const fechaLarga = d => `${DIAS[d.getDay()]} ${d.getDate()} de ${d.toLocaleDateString("es-ES",{month:"long"})}, ${hora(d)}`;
 const aLocalInput = d => { const p=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
 
+const hoyISO = () => aLocalInput(new Date()).slice(0,10);
+const fechaCorta = iso => { const [y,m,d] = String(iso).split("-").map(Number); return new Date(y,m-1,d).toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"}); };
+function antiguedad(iso){
+  const [y,m,d] = String(iso).split("-").map(Number), hoy = new Date();
+  let meses = (hoy.getFullYear()-y)*12 + (hoy.getMonth()+1-m);
+  if(hoy.getDate()<d) meses--;
+  if(meses<1) return "menos de un mes";
+  const a = Math.floor(meses/12), r = meses%12, partes = [];
+  if(a) partes.push(`${a} ${a===1?"año":"años"}`);
+  if(r) partes.push(`${r} ${r===1?"mes":"meses"}`);
+  return partes.join(" y ");
+}
+/* Fecha de alta: la que ha puesto la junta; si no hay, la de la solicitud */
+const fechaAlta = x => x.socioDesde || (x.creado?.toDate ? aLocalInput(x.creado.toDate()).slice(0,10) : "");
+const ANIO = new Date().getFullYear();
+const ibanBonito = v => String(v||"").replace(/\s+/g,"").replace(/(.{4})/g,"$1 ").trim();
+const soloDigitos = v => String(v||"").replace(/\D/g,"");
+function normMovil(v){
+  let d = soloDigitos(v);
+  if(d.length===13 && d.startsWith("0034")) d = d.slice(4);
+  else if(d.length===11 && d.startsWith("34")) d = d.slice(2);
+  return /^[67]\d{8}$/.test(d) ? d : "";
+}
+/* Clave para buscar un socio: "m" + móvil o "n" + número de socio */
+function claveSocio(v){
+  const m = normMovil(v);
+  if(m) return "m"+m;
+  const d = soloDigitos(v);
+  return /^\d{1,6}$/.test(d) ? "n"+Number(d) : "";
+}
 const ERRORES = {
   "auth/invalid-credential":"Correo o contraseña incorrectos.",
   "auth/invalid-email":"El correo no es válido.",
@@ -328,7 +395,7 @@ function toast(msg, tipo="ok"){
 const DEMO_ON = !FIREBASE_CONFIG.apiKey;
 const S = {
   demo: DEMO_ON, user:null, perfil:null, ajustes:{...AJUSTES_POR_DEFECTO, redes:{...AJUSTES_POR_DEFECTO.redes}},
-  tk:0, rutaPrev:"", registrando:false, apuntar:null,
+  tk:0, rutaPrev:"", registrando:false, apuntar:null, deps:[],
   adm:{ tab:"socios", edit:null, abierto:{}, recuentos:{}, datos:{}, externos:{} }
 };
 let auth, db;
@@ -373,13 +440,20 @@ async function cargarAjustes(){
   }
 }
 async function cargarPerfil(u){
-  const r = doc(db,"users",u.uid);
-  let s = await getDoc(r);
-  if(!s.exists()){
-    await setDoc(r,{nombre:u.displayName||u.email.split("@")[0], email:u.email, telefono:"", familiares:[], rol:"socio", estado:"pendiente", creado:serverTimestamp()});
-    s = await getDoc(r);
+  const sn = await getDoc(doc(db,"socios",u.uid));
+  return sn.exists() ? {id:sn.id, ...sn.data()} : null;
+}
+async function cargarDeps(){
+  if(S.demo || !S.user || !esSocio()) return [];
+  const sn = await getDocs(query(collection(db,"socios"), where("titularId","==",S.user.uid)));
+  return sn.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.numero||0)-(b.numero||0));
+}
+async function sincronizarDeps(){
+  S.deps = await cargarDeps();
+  if(esSocio() && (S.perfil.numDependientes||0) !== S.deps.length){
+    await updateDoc(doc(db,"socios",S.user.uid),{numDependientes:S.deps.length});
+    S.perfil.numDependientes = S.deps.length;
   }
-  return {id:s.id, ...s.data()};
 }
 const esSocio = () => S.perfil?.estado === "aprobado";
 const esAdmin = () => esSocio() && S.perfil?.rol === "admin";
@@ -420,7 +494,7 @@ function avisoEstado(){
   if(esSocio()) return "";
   const correo = S.ajustes.email ? ` (${esc(S.ajustes.email)})` : "";
   if(!S.user) return `<p class="aviso">Pulsa «Apuntarme» en la actividad que te interese. Si eres socio, entras a tu portal; si no, solo te pedimos tu nombre y apellidos, y un teléfono si quieres.</p>`;
-  if(S.perfil?.estado==="pendiente") return `<p class="aviso">Tu solicitud de alta como socio está pendiente. Hasta que la junta la apruebe, puedes apuntarte como no socio.</p>`;
+  if(S.perfil?.estado==="pendiente") return `<p class="aviso">Tu alta está pendiente de aprobación: la junta la activará cuando compruebe el pago de la cuota anual. Mientras tanto, puedes apuntarte a las actividades como no socio.</p>`;
   if(S.perfil?.estado==="rechazado") return `<p class="aviso">Tu alta como socio no está activa, así que te apuntas como no socio. Si crees que es un error, escribe a la asociación${correo}.</p>`;
   return "";
 }
@@ -441,14 +515,15 @@ const misAsistentes = a => (S.user && a.inscritos?.[S.user.uid]) || [];
 function botonActividad(a){
   const lleno = a.aforo>0 && ocupacion(a)>=a.aforo;
   if(esSocio()){
-    const mis = misAsistentes(a), fams = S.perfil.familiares||[];
+    if(S.perfil.titularId) return `<span class="chip">Te apunta tu titular</span>`;
+    const mis = misAsistentes(a), fams = S.deps||[];
     if(!fams.length){
       if(mis.length) return `<button class="btn sec" data-accion="baja" data-id="${a.id}">Darme de baja</button>`;
       if(lleno) return `<span class="chip no">Completo</span>`;
       return `<button class="btn" data-accion="apuntar" data-id="${a.id}">Apuntarme</button>`;
     }
     if(lleno && !mis.length) return `<span class="chip no">Completo</span>`;
-    const personas = [{id:"yo",nombre:`${S.perfil.nombre} (tú)`}, ...fams];
+    const personas = [{id:S.perfil.id,nombre:`${S.perfil.nombre} (tú)`}, ...fams.map(f=>({id:f.id,nombre:`${f.nombre} ${f.apellidos}`}))];
     return `<form class="asist" data-form="asistentes" data-id="${a.id}"><fieldset><legend>¿Quién viene?</legend>
       ${personas.map(x=>`<label class="chk"><input type="checkbox" name="p" value="${esc(x.id)}" ${mis.includes(x.id)?"checked":""}> ${esc(x.nombre)}</label>`).join("")}
       </fieldset><button class="btn peq" type="submit">Guardar asistentes</button></form>`;
@@ -476,7 +551,7 @@ function panelApuntar(a){
   </form>`;
 }
 function filaActividad(a){
-  const d = new Date(a.fecha), n = ocupacion(a), aforo = a.aforo||0, mis = misAsistentes(a), conFamilia = (S.perfil?.familiares||[]).length>0;
+  const d = new Date(a.fecha), n = ocupacion(a), aforo = a.aforo||0, mis = misAsistentes(a), conFamilia = (S.deps||[]).length>0;
   const plazas = aforo>0
     ? `<div class="plazas"><div class="barra"><i style="width:${Math.min(100,n/aforo*100)}%"></i></div>${n} de ${aforo} plazas ocupadas</div>`
     : `<div class="plazas">${n} ${n===1?"persona apuntada":"personas apuntadas"}, sin límite de plazas</div>`;
@@ -490,6 +565,18 @@ function filaActividad(a){
     ${S.apuntar?.id===a.id ? panelApuntar(a) : ""}
   </article>`;
 }
+function tarjetaCartel(a){
+  const d = new Date(a.fecha), libres = a.aforo>0 ? Math.max(0,a.aforo-ocupacion(a)) : null;
+  const media = a.imagen
+    ? `<img class="cartel-img" src="${esc(a.imagen)}" alt="Cartel de ${esc(a.titulo)}" loading="lazy"><span class="cartel-fecha">${d.getDate()} ${MESES[d.getMonth()]}, ${hora(d)}</span>`
+    : `<div class="cartel-sin"><span class="cs-dia">${d.getDate()}</span><span class="cs-mes">${MESES[d.getMonth()]} ${d.getFullYear()}</span></div>`;
+  const plazas = libres===null ? "" : (libres>0 ? `${libres} ${libres===1?"plaza libre":"plazas libres"}` : "Completo");
+  return `<article class="cartel"><div class="cartel-marco">${media}</div>
+    <div class="cartel-cuerpo"><h3>${esc(a.titulo)}</h3>
+      <p class="meta">${fechaLarga(d)}${a.lugar?`, ${esc(a.lugar)}`:""}${plazas?`. ${plazas}`:""}</p>${precioHTML(a)}
+      <div class="cartel-acc">${botonActividad(a)}</div>
+      ${S.apuntar?.id===a.id ? panelApuntar(a) : ""}</div></article>`;
+}
 function tarjetaProyecto(p,i){
   const img = p.imagen ? `<img src="${esc(p.imagen)}" alt="${esc(p.titulo)}" loading="lazy">` : `<div class="ph ph${i%3}" aria-hidden="true">${esc((p.titulo||"?").trim().charAt(0).toUpperCase())}</div>`;
   const url = safeUrl(p.enlace);
@@ -499,6 +586,10 @@ function tarjetaProyecto(p,i){
 }
 function ticket(a){
   if(!a) return `<a class="ticket" href="#/actividades"><div class="ticket-a"><p class="t-etq">Próxima actividad</p><h2>Pronto anunciaremos nuevas actividades</h2></div><div class="ticket-b"><span>Consulta el calendario</span></div></a>`;
+  if(a.imagen){
+    const f = new Date(a.fecha);
+    return `<a class="cartel-hero" href="#/actividades"><img src="${esc(a.imagen)}" alt="Cartel de ${esc(a.titulo)}"><span class="cartel-fecha">${f.getDate()} ${MESES[f.getMonth()]}, ${hora(f)}</span></a>`;
+  }
   const d = new Date(a.fecha), libres = a.aforo>0 ? Math.max(0,a.aforo-ocupacion(a)) : null;
   return `<a class="ticket" href="#/actividades"><div class="ticket-a">
     <p class="t-etq">Próxima actividad</p>
@@ -534,6 +625,7 @@ async function vistaInicio(){
   const [pro, act, noti] = await Promise.all([leer("proyectos"), leer("actividades"), leerNoticias()]);
   const prox = proximas(act), a = S.ajustes;
   const ns = ordenNoticias(noti).slice(0,3);
+  const heroCartel = !!prox[0]?.imagen, resto = heroCartel ? prox.slice(1,4) : prox.slice(0,3);
   const ps = ordenProyectos(pro).slice(0,3);
   return `
   <section class="hero contenedor">
@@ -551,10 +643,10 @@ async function vistaInicio(){
   ${ns.length?`<section class="seccion contenedor" style="padding-top:0">
     <div class="seccion-cab"><h2>Novedades</h2><a href="#/noticias">Todas las noticias</a></div>
     <div class="noticias-home">${ns.map(n=>noticiaHTML(n,true)).join("")}</div></section>`:""}
-  <section class="seccion contenedor" style="padding-top:0">
-    <div class="seccion-cab"><h2>Próximas actividades</h2><a href="#/actividades">Ver todas</a></div>
-    ${prox.length?`<div class="programa">${prox.slice(0,3).map(filaActividad).join("")}</div>`:vacio("No hay actividades programadas","Cuando la junta publique una nueva, la verás aquí.")}
-  </section>
+  ${(heroCartel && !resto.length) ? "" : `<section class="seccion contenedor" style="padding-top:0">
+    <div class="seccion-cab"><h2>${heroCartel?"Más actividades":"Próximas actividades"}</h2><a href="#/actividades">Ver todas</a></div>
+    ${resto.length?`<div class="carteles">${resto.map(tarjetaCartel).join("")}</div>`:vacio("No hay actividades programadas","Cuando la junta publique una nueva, la verás aquí.")}
+  </section>`}
   <section class="seccion contenedor" style="padding-top:0">
     <div class="seccion-cab"><h2>Lo que hemos hecho</h2><a href="#/proyectos">Ver todos los proyectos</a></div>
     ${ps.length?`<div class="rejilla">${ps.map(tarjetaProyecto).join("")}</div>`:vacio("Todavía no hay proyectos publicados","La junta puede añadirlos desde el panel.")}
@@ -596,6 +688,7 @@ async function vistaActividades(){
    ============================================================ */
 function vistaEntrar(modo){
   const reg = modo==="registro";
+  if(S.user && !S.perfil) return vistaFicha();
   if(S.demo) return `<section class="contenedor pagina estrecho"><h1 class="h-pag">Portal del socio</h1><p class="aviso">Para activar el acceso de socios, pega la configuración de Firebase al principio del archivo.</p></section>`;
   return `<section class="contenedor pagina estrecho">
     <h1 class="h-pag">${reg?"Hazte socio":"Portal del socio"}</h1>
@@ -603,41 +696,133 @@ function vistaEntrar(modo){
       <a class="pest" href="#/entrar" ${!reg?'aria-current="page"':""}>Ya soy socio</a>
       <a class="pest" href="#/entrar?registro" ${reg?'aria-current="page"':""}>Quiero hacerme socio</a>
     </div>
-    ${reg?`<p class="suave">Crea tu cuenta y la junta revisará tu solicitud. Cuando te aprueben tendrás el precio de socio, podrás apuntarte desde tu portal y votar en las encuestas.</p>`:""}
+    ${reg?`<p class="suave">Crea tu cuenta y la junta revisará tu solicitud. El alta se completa cuando se recibe la cuota anual. Una vez aprobada, tendrás el precio de socio, podrás apuntarte desde tu portal y votar en las encuestas.</p>`:""}
     <form class="formu" data-form="${reg?"registro":"entrar"}">
-      ${reg?`<div class="campo"><label for="nombre">Nombre y apellidos</label><input id="nombre" name="nombre" required autocomplete="name"></div>`:""}
+      ${reg?`<div class="fila-campos">
+        <div class="campo"><label for="nombre">Nombre</label><input id="nombre" name="nombre" required maxlength="60" autocomplete="given-name"></div>
+        <div class="campo"><label for="apellidos">Apellidos</label><input id="apellidos" name="apellidos" required maxlength="100" autocomplete="family-name"></div>
+      </div>
+      <div class="campo"><label for="movil">Número de móvil</label><input id="movil" name="movil" type="tel" required autocomplete="tel"><small>Con tu móvil o con tu número de socio, otro socio podrá añadirte a su unidad familiar.</small></div>`:""}
       <div class="campo"><label for="email">Correo electrónico</label><input id="email" name="email" type="email" required autocomplete="email"></div>
-      ${reg?`<div class="campo"><label for="telefono">Teléfono (opcional)</label><input id="telefono" name="telefono" type="tel" autocomplete="tel"></div>`:""}
       <div class="campo"><label for="pass">Contraseña</label><input id="pass" name="pass" type="password" required minlength="6" autocomplete="${reg?"new-password":"current-password"}">${reg?`<small>Mínimo 6 caracteres.</small>`:""}</div>
+      ${reg?camposPago(null):""}
       <div><button class="btn" type="submit">${reg?"Solicitar el alta":"Entrar"}</button></div>
       ${reg?"":`<div><button type="button" class="enlace-btn" data-accion="recuperar">He olvidado mi contraseña</button></div>`}
     </form></section>`;
 }
+const listaJunta = () => String(S.ajustes.juntaCobro||"").split("\n").map(x=>x.trim()).filter(Boolean);
+function leerPago(fd){
+  if(fd.get("formaPago")==="efectivo"){
+    const r = String(fd.get("receptor")||"").trim();
+    if(!r) throw new Error("Indica a qué miembro de la junta le entregas el pago en metálico.");
+    return {formaPago:"efectivo", pagadoA:r.slice(0,80)};
+  }
+  return {formaPago:"ingreso", pagadoA:null};
+}
+function importeCuota(){
+  const n = parseFloat(String(S.ajustes.cuota||"").replace(",","."));
+  return Number.isFinite(n) ? eur(n) : "";
+}
+/* Opciones de pago de la cuota: ingreso o metálico (con el miembro de la junta que lo recibe) */
+function camposPago(p){
+  const iban = ibanBonito(S.ajustes.iban), importe = importeCuota(), junta = listaJunta(), efectivo = p?.formaPago==="efectivo";
+  const concepto = p ? `Cuota socio ${p.nombre} ${p.apellidos}` : "Cuota socio y tu nombre y apellidos";
+  const campoReceptor = junta.length
+    ? `<select name="receptor" aria-label="Miembro de la junta"><option value="">Elige el miembro de la junta</option>${junta.map(n=>`<option ${efectivo&&p.pagadoA===n?"selected":""}>${esc(n)}</option>`).join("")}</select>`
+    : `<input name="receptor" maxlength="80" placeholder="Nombre del miembro de la junta" value="${efectivo?esc(p.pagadoA||""):""}" aria-label="Miembro de la junta">`;
+  return `<fieldset class="pago"><legend>Pago de la cuota anual${importe?` (${importe})`:""}</legend>
+    <p class="suave" style="margin:0">Tu alta se activa cuando la junta comprueba el pago. Elige cómo vas a pagar.</p>
+    <div class="pago-op"><label class="opcion"><input type="radio" name="formaPago" value="ingreso" ${efectivo?"":"checked"}><span>Ingreso o transferencia a la cuenta de la asociación</span></label>
+      <div class="detalle">${iban
+        ? `<p class="iban">${esc(iban)}</p><p>Concepto: <strong>${esc(concepto)}</strong>. También puedes programarlo en tu banco como pago periódico.</p><p><button type="button" class="btn peq sec" data-accion="copiarIban">Copiar IBAN</button></p>`
+        : `<p>La junta te indicará la cuenta para el ingreso.</p>`}</div></div>
+    <div class="pago-op"><label class="opcion"><input type="radio" name="formaPago" value="efectivo" ${efectivo?"checked":""}><span>En metálico, entregándolo a un miembro de la junta</span></label>
+      <div class="detalle"><p>Indica a qué miembro de la junta le entregas el pago (es obligatorio):</p>${campoReceptor}</div></div>
+  </fieldset>`;
+}
+function cajaCuota(titulo, persona, cierre, renovacion=false){
+  const importe = importeCuota(), iban = ibanBonito(S.ajustes.iban);
+  const concepto = persona ? `Cuota socio ${persona.nombre} ${persona.apellidos}`.trim() : "Cuota socio y tu nombre y apellidos";
+  const efectivo = !renovacion && persona?.formaPago==="efectivo";
+  const cuerpo = efectivo
+    ? `<p>Has elegido pagar en metálico${importe ? ` (${importe})` : ""}. Entrégaselo a <strong>${esc(persona.pagadoA||"un miembro de la junta")}</strong>.</p>
+       <p class="suave">Si prefieres hacer un ingreso, cambia la forma de pago más abajo.</p>`
+    : (iban
+        ? `<p>${importe ? `Ingresa <strong>${importe}</strong>` : "Ingresa la cuota anual"} en la cuenta de la asociación:</p>
+           <p class="iban">${esc(iban)}</p>
+           <p>Escribe como concepto: <strong>${esc(concepto)}</strong></p>
+           <p><button type="button" class="btn peq sec" data-accion="copiarIban">Copiar IBAN</button></p>`
+        : `<p>La junta te indicará cómo pagar la cuota anual${importe ? ` (${importe})` : ""}.</p>`)
+      + (renovacion ? `<p>También puedes pagarla en metálico a un miembro de la junta.</p>` : "");
+  return `<div class="cuota"><p><strong>${titulo}</strong></p>${cuerpo}<p class="suave">${cierre}</p></div>`;
+}
+function avisoCuota(){
+  const p = S.perfil; if(!p) return "";
+  if(p.estado==="pendiente") return cajaCuota("Para completar tu alta", p, "Cuando la junta confirme el pago, activará tu alta y te dará tu número de socio.");
+  if(p.estado==="aprobado" && (p.cuotaAnio||0) < ANIO) return cajaCuota(`Tienes pendiente de renovar la cuota de ${ANIO}`, p, "Cuando la junta reciba el pago, lo registrará en tu ficha.", true);
+  return "";
+}
+function vistaFicha(){
+  return `<section class="contenedor pagina estrecho"><h1 class="h-pag">Completa tu ficha</h1>
+    <p class="aviso">Tu cuenta ya existe, pero falta tu ficha de socio. Rellena estos datos y la junta revisará tu solicitud.</p>
+    <form class="formu" data-form="ficha">
+      <div class="fila-campos">
+        <div class="campo"><label for="nombre">Nombre</label><input id="nombre" name="nombre" required maxlength="60"></div>
+        <div class="campo"><label for="apellidos">Apellidos</label><input id="apellidos" name="apellidos" required maxlength="100"></div>
+      </div>
+      <div class="campo"><label for="movil">Número de móvil</label><input id="movil" name="movil" type="tel" required></div>
+      ${camposPago(null)}
+      <div><button class="btn" type="submit">Enviar solicitud</button></div>
+    </form></section>`;
+}
+function fichaSocio(p){
+  const d = fechaAlta(p);
+  let filas;
+  if(p.estado==="aprobado"){
+    const alDia = (p.cuotaAnio||0) >= ANIO;
+    filas = [["Estado","Activo"], ["Número de socio", p.numero ? `nº ${p.numero}` : "Sin asignar"], ["Socio desde", d ? fechaCorta(d) : "Sin fecha"], ["Antigüedad", d ? antiguedad(d) : "Sin fecha"], [`Cuota ${ANIO}`, alDia ? "Al día" : "Pendiente de renovar"]];
+  } else if(p.estado==="pendiente"){
+    filas = [["Estado","Pendiente de aprobación"], ["Solicitud enviada", d ? fechaCorta(d) : "—"], ["Forma de pago", p.formaPago==="efectivo" ? `En metálico, a ${p.pagadoA||"—"}` : "Ingreso o transferencia"]];
+  } else {
+    filas = [["Estado","Baja o no aprobado"]];
+  }
+  return `<dl class="ficha">${filas.map(([k,v])=>`<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>`;
+}
 async function vistaCuenta(){
   if(!S.user) return avisoAcceso("Entra con tu cuenta para ver esta página.");
+  if(!S.perfil) return vistaFicha();
   const act = proximas(await leer("actividades")).filter(a=>misAsistentes(a).length);
-  const p = S.perfil, fams = p.familiares||[];
-  const estado = {aprobado:'<span class="chip ok">Socio activo</span>',pendiente:'<span class="chip pend">Alta pendiente</span>',rechazado:'<span class="chip no">Alta no activa</span>'}[p.estado]||"";
+  const p = S.perfil, deps = S.deps||[], depende = !!p.titularId;
+  const estado = {aprobado:`<span class="chip ok">Socio activo</span> ${(p.cuotaAnio||0)>=ANIO?`<span class="chip ok">Cuota ${ANIO} al día</span>`:`<span class="chip no">Pendiente de renovar ${ANIO}</span>`}`,pendiente:'<span class="chip pend">Pendiente de aprobación</span>',rechazado:'<span class="chip no">Alta no activa</span>'}[p.estado]||"";
+  let familia;
+  if(p.estado!=="aprobado") familia = `<p class="suave" style="margin-top:8px">Cuando la junta apruebe tu alta podrás unir a otros socios a tu unidad familiar.</p>`;
+  else if(depende) familia = `<p style="margin-top:8px">Estás en la unidad familiar de otro socio: es esa persona quien te apunta a las actividades.</p>
+        <p><button class="btn sec peq" data-accion="salirGrupo">Salir de la unidad familiar</button></p>`;
+  else familia = `<p class="suave" style="margin-top:8px">Para unir a otro socio a tu unidad familiar, escribe su número de socio o su móvil. Después podrás apuntarlo a las actividades desde tu portal.</p>
+        ${deps.length?`<ul class="lista-adm">${deps.map(f=>`<li><div class="cuerpo"><strong>${esc(f.nombre)} ${esc(f.apellidos)}</strong> ${f.numero?`<span class="chip">Socio nº ${f.numero}</span>`:""}<br><span class="suave">Móvil ${esc(f.movil)}</span></div><div class="btns"><button class="btn peq peligro" data-accion="quitarDep" data-id="${esc(f.id)}">Quitar</button></div></li>`).join("")}</ul>`:""}
+        <form class="formu" data-form="vincular">
+          <div class="campo"><label for="dato">Número de socio o móvil</label><input id="dato" name="dato" required></div>
+          <div><button class="btn" type="submit">Añadir a mi unidad familiar</button></div>
+        </form>`;
   return `<section class="contenedor pagina"><h1 class="h-pag">Mi portal</h1>
     ${avisoEstado()}
+    ${avisoCuota()}
     <div class="adm-grid">
-      <div><h2 style="font-size:1.8rem">Mis datos</h2><p style="margin-top:8px">${estado}</p>
+      <div><h2 style="font-size:1.8rem">Mis datos</h2><p style="margin-top:8px">${estado}${p.rol==="admin"?' <span class="chip">Administrador</span>':""}</p>
+        ${fichaSocio(p)}
         <form class="formu" data-form="perfil">
-          <div class="campo"><label for="nombre">Nombre</label><input id="nombre" name="nombre" required value="${esc(p.nombre)}"></div>
-          <div class="campo"><label for="telefono">Teléfono</label><input id="telefono" name="telefono" type="tel" value="${esc(p.telefono||"")}"></div>
-          <div class="campo"><label>Correo</label><input value="${esc(p.email)}" disabled></div>
+          <div class="fila-campos">
+            <div class="campo"><label for="nombre">Nombre</label><input id="nombre" name="nombre" required maxlength="60" value="${esc(p.nombre)}"></div>
+            <div class="campo"><label for="apellidos">Apellidos</label><input id="apellidos" name="apellidos" required maxlength="100" value="${esc(p.apellidos)}"></div>
+          </div>
+          <div class="campo"><label>Móvil</label><input value="${esc(p.movil)}" disabled><small>Si necesitas cambiarlo, escribe a la junta.</small></div>
+          <div class="campo"><label>Correo</label><input value="${esc(p.email||S.user.email)}" disabled></div>
           <div><button class="btn" type="submit">Guardar cambios</button></div>
         </form>
+        ${p.estado==="pendiente"?`<h2 style="font-size:1.8rem;margin-top:56px">Forma de pago</h2>
+        <form class="formu" data-form="pago">${camposPago(p)}<div><button class="btn" type="submit">Guardar forma de pago</button></div></form>`:""}
         <h2 style="font-size:1.8rem;margin-top:56px">Mi unidad familiar</h2>
-        <p class="suave" style="margin-top:8px">Añade a las personas de tu familia y podrás apuntarlas a las actividades desde tu cuenta.</p>
-        ${fams.length?`<ul class="lista-adm">${fams.map(f=>`<li><div class="cuerpo"><strong>${esc(f.nombre)}</strong> <span class="chip">${esc(f.relacion)}</span></div><div class="btns"><button class="btn peq peligro" data-accion="quitarFam" data-id="${esc(f.id)}">Quitar</button></div></li>`).join("")}</ul>`:""}
-        <form class="formu" data-form="familiar">
-          <div class="fila-campos">
-            <div class="campo"><label for="fnombre">Nombre</label><input id="fnombre" name="nombre" required></div>
-            <div class="campo"><label for="frel">Relación</label><select id="frel" name="relacion"><option>Pareja</option><option>Hijo/a</option><option>Padre o madre</option><option>Otro familiar</option></select></div>
-          </div>
-          <div><button class="btn" type="submit">Añadir a la familia</button></div>
-        </form></div>
+        ${familia}</div>
       <div><h2 style="font-size:1.8rem;margin-bottom:12px">Mis próximas actividades</h2>
         ${act.length?`<div class="programa">${act.map(filaActividad).join("")}</div>`:vacio("No estás apuntado a ninguna actividad","Mira el calendario y apúntate a la que te guste.")}
       </div></div></section>`;
@@ -681,60 +866,98 @@ const PESTANAS = [["socios","Socios"],["noticias","Noticias"],["actividades","Ac
 async function vistaAdmin(){
   if(!esAdmin()) return avisoAcceso("Esta zona es solo para la junta directiva.");
   const D = S.adm.datos, tab = S.adm.tab;
-  D.users = await leer("users");
+  D.socios = await leer("socios");
   if(tab==="actividades") D.actividades = await leer("actividades");
   if(tab==="proyectos") D.proyectos = await leer("proyectos");
   if(tab==="encuestas") D.encuestas = await leer("encuestas");
   if(tab==="noticias") D.noticias = await leerNoticias();
-  const pend = D.users.filter(u=>u.estado==="pendiente").length;
+  const pend = D.socios.filter(u=>u.estado==="pendiente").length;
   const cuerpo = {socios:admSocios, noticias:admNoticias, actividades:admActividades, proyectos:admProyectos, encuestas:admEncuestas, web:admWeb}[tab]();
   return `<section class="contenedor pagina"><h1 class="h-pag">Panel de la junta</h1>
     <div class="pestanas">${PESTANAS.map(([k,t])=>`<button class="pest" data-accion="pestana" data-id="${k}" ${tab===k?'aria-current="true"':""}>${t}${k==="socios"&&pend?` (${pend})`:""}</button>`).join("")}</div>
     ${cuerpo}</section>`;
 }
-const chipEstado = u => ({aprobado:'<span class="chip ok">Socio</span>',pendiente:'<span class="chip pend">Solicitud pendiente</span>',rechazado:'<span class="chip no">Rechazado</span>'}[u.estado]||"");
+const pagoHTML = x => x.formaPago ? `<br><span class="suave">Pago del alta: ${x.formaPago==="efectivo" ? `en metálico, entregado a ${esc(x.pagadoA||"—")}` : "ingreso o transferencia (compruébalo en el banco)"}</span>` : "";
+const socioDesdeHTML = x => {
+  if(x.estado!=="aprobado") return "";
+  const d = fechaAlta(x);
+  return `<br><span class="suave">${d?`Socio desde ${fechaCorta(d)} (${antiguedad(d)})`:"Sin fecha de alta"}</span>
+    <details class="mini"><summary>Cambiar fecha de alta</summary><form data-form="fechaAlta" data-id="${x.id}"><input type="date" name="fecha" required value="${esc(d)}" max="${hoyISO()}" aria-label="Fecha de alta"><button class="btn peq" type="submit">Guardar</button></form></details>`;
+};
+const cuotaAlDia = x => (x.cuotaAnio||0) >= ANIO;
+const cuotaChip = x => cuotaAlDia(x) ? `<span class="chip ok">Cuota ${ANIO} al día</span>` : `<span class="chip no">Pendiente de renovar ${ANIO}</span>`;
+const chipEstado = u => ({aprobado:'<span class="chip ok">Activo</span>',pendiente:'<span class="chip pend">Pendiente de aprobación</span>',rechazado:'<span class="chip no">Baja o rechazado</span>'}[u.estado]||"");
 
-function campoImagen(ed){
-  return `<div class="campo"><label for="imagenArchivo">Imagen (opcional)</label><input id="imagenArchivo" name="imagenArchivo" type="file" accept="image/*"><small>Se reduce automáticamente.${ed.imagen?" Si no eliges otra, se mantiene la actual.":""}</small>${ed.imagen?`<img class="miniatura" src="${esc(ed.imagen)}" alt="Imagen actual">`:""}</div>
+function campoImagen(ed, etiqueta="Imagen (opcional)"){
+  return `<div class="campo"><label for="imagenArchivo">${etiqueta}</label><input id="imagenArchivo" name="imagenArchivo" type="file" accept="image/*"><small>Se reduce automáticamente.${ed.imagen?" Si no eliges otra, se mantiene la actual.":""}</small>${ed.imagen?`<img class="miniatura" src="${esc(ed.imagen)}" alt="Imagen actual">`:""}</div>
     <div class="campo"><label for="imagenUrl">O dirección de una imagen</label><input id="imagenUrl" name="imagenUrl" placeholder="https://..."></div>
     ${ed.imagen?`<label class="chk"><input type="checkbox" name="quitarImagen"> Quitar la imagen actual</label>`:""}`;
 }
 function admSocios(){
+  const todos = S.adm.datos.socios, mapa = Object.fromEntries(todos.map(x=>[x.id,x]));
   const orden = {pendiente:0,aprobado:1,rechazado:2};
-  const lista = [...S.adm.datos.users].sort((a,b)=>(orden[a.estado]??3)-(orden[b.estado]??3)||String(a.nombre).localeCompare(String(b.nombre)));
-  const botones = u => {
-    if(u.id===S.user.uid) return `<span class="chip">Tú</span>`;
-    const b = [];
-    if(u.estado!=="aprobado") b.push(`<button class="btn peq" data-accion="estado" data-id="${u.id}" data-valor="aprobado">Aprobar</button>`);
-    if(u.estado==="pendiente") b.push(`<button class="btn peq peligro" data-accion="estado" data-id="${u.id}" data-valor="rechazado">Rechazar</button>`);
-    if(u.estado==="aprobado"){
-      b.push(`<button class="btn peq sec" data-accion="rol" data-id="${u.id}" data-valor="${u.rol==="admin"?"socio":"admin"}">${u.rol==="admin"?"Quitar de la junta":"Añadir a la junta"}</button>`);
-      b.push(`<button class="btn peq peligro" data-accion="estado" data-id="${u.id}" data-valor="rechazado">Dar de baja</button>`);
+  const lista = [...todos].sort((a,b)=>(orden[a.estado]??3)-(orden[b.estado]??3) || (a.numero||1e9)-(b.numero||1e9) || String(a.apellidos).localeCompare(String(b.apellidos)));
+  const nombre = x => `${x.nombre||""} ${x.apellidos||""}`.trim();
+  const etiq = x => x ? `${x.numero?`nº ${x.numero} `:""}${nombre(x)}` : "socio eliminado";
+  const deps = {}; todos.forEach(x=>{ if(x.titularId) (deps[x.titularId] ||= []).push(x); });
+  const pendientes = todos.filter(x=>x.estado==="pendiente").length;
+  const sinCuota = todos.filter(x=>x.estado==="aprobado" && !cuotaAlDia(x)).length;
+  const botones = x => {
+    const b = [], yo = x.id===S.user.uid;
+    if(yo) b.push(`<span class="chip">Tú</span>`);
+    if(x.estado!=="aprobado") b.push(`<button class="btn peq" data-accion="aprobar" data-id="${x.id}">Aprobar (pago recibido)</button>`);
+    if(x.estado==="aprobado" && !x.numero) b.push(`<button class="btn peq" data-accion="asignarNumero" data-id="${x.id}">Asignar número</button>`);
+    if(x.estado==="aprobado" && !cuotaAlDia(x)) b.push(`<button class="btn peq" data-accion="registrarCuota" data-id="${x.id}">Registrar cuota ${ANIO}</button>`);
+    if(x.estado==="pendiente") b.push(`<button class="btn peq peligro" data-accion="estado" data-id="${x.id}" data-valor="rechazado">Rechazar</button>`);
+    if(x.estado==="aprobado" && !yo){
+      if(x.uid) b.push(`<button class="btn peq sec" data-accion="rol" data-id="${x.id}" data-valor="${x.rol==="admin"?"socio":"admin"}">${x.rol==="admin"?"Quitar administrador":"Hacer administrador"}</button>`);
+      b.push(`<button class="btn peq peligro" data-accion="estado" data-id="${x.id}" data-valor="rechazado">Dar de baja</button>`);
     }
+    if(x.titularId) b.push(`<button class="btn peq sec" data-accion="desvincular" data-id="${x.id}">Sacar de la unidad familiar</button>`);
     return b.join("");
   };
+  const fila = x => `<li data-texto="${esc(`${x.numero||""} ${nombre(x)} ${x.movil||""} ${x.email||""}${x.estado==="aprobado"&&!cuotaAlDia(x)?" pendiente de renovar":""}${x.rol==="admin"?" administrador":""}${x.estado==="pendiente"?" pendiente de aprobación":""}`.toLowerCase())}"><div class="cuerpo"><strong>${x.numero?`Nº ${x.numero}, `:""}${esc(nombre(x))}</strong> ${chipEstado(x)} ${x.estado==="aprobado"?cuotaChip(x):""} ${x.rol==="admin"?'<span class="chip">Administrador</span>':""} ${x.uid?"":'<span class="chip">Sin cuenta</span>'}<br><span class="suave">Móvil ${esc(x.movil||"")}${x.email?`, ${esc(x.email)}`:""}</span>${pagoHTML(x)}${socioDesdeHTML(x)}${x.titularId?`<br><span class="suave">En la unidad familiar de ${esc(etiq(mapa[x.titularId]))}</span>`:""}${(deps[x.id]||[]).length?`<br><span class="suave">Unidad familiar: ${deps[x.id].map(d=>esc(etiq(d))).join(", ")}</span>`:""}</div><div class="btns">${botones(x)}</div></li>`;
   return `<div class="panel-adm"><h2>Socios</h2>
-    ${lista.length?`<ul class="lista-adm">${lista.map(u=>`<li><div class="cuerpo"><strong>${esc(u.nombre)}</strong> ${chipEstado(u)} ${u.rol==="admin"?'<span class="chip">Junta</span>':""}<br><span class="suave">${esc(u.email)}${u.telefono?`, ${esc(u.telefono)}`:""}</span>${(u.familiares||[]).length?`<br><span class="suave">Unidad familiar: ${u.familiares.map(f=>`${esc(f.nombre)} (${esc(f.relacion)})`).join(", ")}</span>`:""}</div><div class="btns">${botones(u)}</div></li>`).join("")}</ul>`:"<p>Todavía no hay socios registrados.</p>"}</div>`;
+    <p class="suave" style="margin-top:8px;max-width:70ch">Los administradores gestionan toda la web. Para dar permisos a un socio, debe tener cuenta y el alta aprobada: pulsa «Hacer administrador» en su ficha. Puedes quitárselos cuando quieras.</p>
+    <div class="adm-grid" style="margin-top:12px">
+      <form class="formu" data-form="socioJunta"><h3>Añadir socio</h3>
+        <div class="fila-campos">
+          <div class="campo"><label for="sj-nombre">Nombre</label><input id="sj-nombre" name="nombre" required maxlength="60"></div>
+          <div class="campo"><label for="sj-apellidos">Apellidos</label><input id="sj-apellidos" name="apellidos" required maxlength="100"></div>
+        </div>
+        <div class="campo"><label for="sj-movil">Número de móvil</label><input id="sj-movil" name="movil" type="tel" required><small>Recibe su número de socio al guardarlo. No necesita cuenta.</small></div>
+        <div class="campo"><label for="sj-desde">Socio desde</label><input id="sj-desde" name="socioDesde" type="date" required value="${hoyISO()}" max="${hoyISO()}"><small>Si ya era socio de antes, pon la fecha en que se hizo socio.</small></div>
+        <label class="chk"><input type="checkbox" name="cuotaPagada" checked> Ha pagado la cuota de ${ANIO}</label>
+        <div><button class="btn" type="submit">Añadir socio</button></div></form>
+      <form class="formu" data-form="unir"><h3>Unir socios en una unidad familiar</h3>
+        <div class="campo"><label for="un-titular">Titular (número de socio o móvil)</label><input id="un-titular" name="titular" required></div>
+        <div class="campo"><label for="un-socio">Socio que se une (número de socio o móvil)</label><input id="un-socio" name="socio" required></div>
+        <div><button class="btn" type="submit">Unir</button></div></form>
+    </div>
+    ${pendientes?`<p style="margin-top:28px;max-width:70ch"><strong>${pendientes} ${pendientes===1?"solicitud pendiente":"solicitudes pendientes"} de aprobación.</strong> Salen las primeras de la lista. Apruébalas solo cuando hayas comprobado el ingreso de la cuota.</p>`:""}
+    ${sinCuota?`<p class="suave" style="margin-top:28px">${sinCuota} ${sinCuota===1?"socio tiene":"socios tienen"} pendiente de renovar la cuota de ${ANIO}. Escribe «renovar» en el buscador para verlos.</p>`:""}
+    <div class="campo" style="margin-top:32px;max-width:420px"><label for="buscar-socio">Buscar</label><input id="buscar-socio" type="search" data-filtro="lista-socios" placeholder="Número, nombre o móvil"></div>
+    ${lista.length?`<ul class="lista-adm" id="lista-socios">${lista.map(fila).join("")}</ul>`:"<p>Todavía no hay socios registrados.</p>"}</div>`;
 }
 function admActividades(){
   const D = S.adm.datos, ed = D.actividades.find(x=>x.id===S.adm.edit)||{};
-  const usuarios = Object.fromEntries(D.users.map(u=>[u.id,u]));
+  const usuarios = Object.fromEntries(D.socios.map(u=>[u.id,u]));
   const lista = [...D.actividades].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
   const apuntados = a => {
     const grupos = Object.entries(a.inscritos||{}).filter(([,l])=>l.length);
     const ext = S.adm.externos[a.id]||[];
     if(!grupos.length && !ext.length) return "Nadie se ha apuntado todavía.";
     let nSocios = 0, nNo = ext.length, total = 0, hayPrecio = false;
-    const filasSocios = grupos.map(([uid,l])=>{
-      const u = usuarios[uid]||{}, fams = u.familiares||[], socio = u.estado==="aprobado";
-      const nombres = l.map(id => id==="yo" ? (u.nombre||"Socio eliminado") : (fams.find(f=>f.id===id)?.nombre||"Persona eliminada"));
+    const filasSocios = grupos.map(([hid,l])=>{
+      const cab = usuarios[hid]||{}, socio = cab.estado==="aprobado";
+      const nombres = l.map(id => { const x = usuarios[id]; return x ? `${x.numero?`nº ${x.numero} `:""}${x.nombre||""} ${x.apellidos||""}`.trim() : "Persona eliminada"; });
       const precio = socio ? a.precioSocio : a.precioNoSocio;
       const importe = typeof precio==="number" ? precio*l.length : null;
       if(socio) nSocios += l.length; else nNo += l.length;
       if(importe!==null){ total += importe; hayPrecio = true; }
-      const detalle = [[u.email,u.telefono].filter(Boolean).map(esc).join(", "), importe!==null?`a cobrar ${eur(importe)}`:""].filter(Boolean).join(", ");
-      const soloTitular = l.length===1 && l[0]==="yo";
-      return `<li><strong>${nombres.map(esc).join(", ")}</strong> <span class="chip ${socio?"ok":"pend"}">${socio?"Socio":"No socio"}</span>${soloTitular?"":` <span class="suave">(familia de ${esc(u.nombre||"socio eliminado")})</span>`}<br><span class="suave">${detalle}</span></li>`;
+      const detalle = [cab.movil?`móvil ${esc(cab.movil)}`:"", cab.email?esc(cab.email):"", importe!==null?`a cobrar ${eur(importe)}`:""].filter(Boolean).join(", ");
+      const soloTitular = l.length===1 && l[0]===hid;
+      return `<li><strong>${nombres.map(esc).join(", ")}</strong> <span class="chip ${socio?"ok":"pend"}">${socio?"Socio":"No socio"}</span>${soloTitular?"":` <span class="suave">(unidad familiar de ${esc(`${cab.nombre||"socio eliminado"} ${cab.apellidos||""}`.trim())})</span>`}<br><span class="suave">${detalle}</span></li>`;
     }).join("");
     const impExt = typeof a.precioNoSocio==="number" ? a.precioNoSocio : null;
     if(impExt!==null && ext.length){ total += impExt*ext.length; hayPrecio = true; }
@@ -755,7 +978,7 @@ function admActividades(){
           <div class="campo"><label for="precioNoSocio">Precio para no socios (€)</label><input id="precioNoSocio" name="precioNoSocio" type="number" min="0" step="0.01" value="${ed.precioNoSocio??""}"></div>
         </div>
         <small class="suave" style="margin-top:-6px">Déjalos vacíos si la actividad no tiene precio. Pon 0 si es gratis.</small>
-        ${campoImagen(ed)}
+        ${campoImagen(ed,"Cartel de la actividad (opcional)")}
         <div class="acciones" style="margin:0"><button class="btn" type="submit">${ed.id?"Guardar cambios":"Publicar actividad"}</button>${ed.id?`<button type="button" class="btn sec" data-accion="cancelar">Cancelar</button>`:""}</div>
       </form></div>
     <div><h2 style="font-size:1.8rem">Actividades</h2>
@@ -830,6 +1053,12 @@ function admWeb(){
         <div class="campo"><label for="telefono">Teléfono</label><input id="telefono" name="telefono" value="${esc(a.telefono)}"></div></div>
       <div class="campo"><label for="whatsappContacto">WhatsApp de contacto</label><input id="whatsappContacto" name="whatsappContacto" type="tel" value="${esc(a.whatsappContacto)}"></div>
       <div class="campo"><label for="direccion">Dirección</label><input id="direccion" name="direccion" value="${esc(a.direccion)}"></div>
+      <h3 style="margin-top:12px">Cuota de socio</h3>
+      <div class="fila-campos">
+        <div class="campo"><label for="cuota">Cuota anual (€)</label><input id="cuota" name="cuota" inputmode="decimal" value="${esc(a.cuota)}"></div>
+        <div class="campo"><label for="iban">IBAN de la asociación</label><input id="iban" name="iban" value="${esc(a.iban)}" placeholder="ES00 0000 0000 0000 0000 0000"></div>
+      </div>
+      <div class="campo"><label for="juntaCobro">Miembros de la junta que pueden cobrar en metálico</label><textarea id="juntaCobro" name="juntaCobro" placeholder="Un nombre por línea">${esc(a.juntaCobro)}</textarea><small>Quien pague en metálico elegirá uno de estos nombres. Si lo dejas vacío, escribirá el nombre a mano.</small></div>
       <h3 style="margin-top:12px">Redes sociales</h3>
       <div class="fila-campos">${REDES.map(([k,t])=>`<div class="campo"><label for="red-${k}">${t}</label><input id="red-${k}" name="red-${k}" placeholder="https://..." value="${esc(a.redes[k])}"></div>`).join("")}</div>
       <div><button class="btn" type="submit">Guardar cambios</button></div>
@@ -839,7 +1068,7 @@ function admWeb(){
 /* ============================================================
    Acciones (clics)
    ============================================================ */
-/* Cada cuenta guarda la lista de personas que van: "yo" (titular) y/o los id de sus familiares */
+/* Cada titular guarda la lista de socios que van (él mismo y/o los socios de su unidad familiar) */
 async function guardarAsistentes(id, lista){
   const ref = doc(db,"actividades",id), uid = S.user.uid;
   await runTransaction(db, async tx => {
@@ -870,26 +1099,98 @@ async function cargarExternos(id){
   const sn = await getDocs(collection(db,"actividades",id,"externos"));
   S.adm.externos[id] = sn.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>(x.creado?.toMillis?.()||0)-(y.creado?.toMillis?.()||0));
 }
+/* Número de socio: lo asigna la junta de forma correlativa y única. También guarda un índice
+   (número y móvil -> socio) para poder unir socios sin exponer la lista de socios. */
+async function aprobarSocio(id, conCuota=true){
+  const ref = doc(db,"socios",id), cont = doc(db,"config","contador");
+  await runTransaction(db, async tx => {
+    const sn = await tx.get(ref), c = await tx.get(cont);
+    if(!sn.exists()) throw new Error("Ese socio ya no existe.");
+    const socio = sn.data();
+    const desde = socio.socioDesde ? {} : {socioDesde:hoyISO()};
+    if(socio.numero){ tx.update(ref,{estado:"aprobado", ...desde, ...(conCuota?{cuotaAnio:ANIO}:{})}); return; }
+    const mref = doc(db,"indice","m"+socio.movil), m = await tx.get(mref);
+    if(m.exists() && m.data().socioId!==id) throw new Error("Ese móvil ya pertenece a otro socio.");
+    const numero = (c.exists() ? (c.data().ultimo||0) : 0) + 1;
+    tx.update(ref,{estado:"aprobado", numero, ...desde, ...(conCuota?{cuotaAnio:ANIO}:{})});
+    tx.set(doc(db,"indice","n"+numero),{socioId:id});
+    tx.set(mref,{socioId:id});
+    tx.set(cont,{ultimo:numero});
+  });
+}
+async function crearSocioJunta(d){
+  const ref = doc(collection(db,"socios")), cont = doc(db,"config","contador"), mref = doc(db,"indice","m"+d.movil);
+  await runTransaction(db, async tx => {
+    const c = await tx.get(cont), m = await tx.get(mref);
+    if(m.exists()) throw new Error("Ese móvil ya pertenece a otro socio.");
+    const numero = (c.exists() ? (c.data().ultimo||0) : 0) + 1;
+    tx.set(ref,{nombre:d.nombre, apellidos:d.apellidos, movil:d.movil, uid:null, rol:"socio", estado:"aprobado", titularId:null, numero, cuotaAnio:d.cuotaAnio ?? null, socioDesde:d.socioDesde, creado:serverTimestamp()});
+    tx.set(doc(db,"indice","n"+numero),{socioId:ref.id});
+    tx.set(mref,{socioId:ref.id});
+    tx.set(cont,{ultimo:numero});
+  });
+}
+async function resolverSocio(dato){
+  const clave = claveSocio(dato);
+  if(!clave) throw new Error("Escribe un número de socio o un móvil válido.");
+  const ix = await getDoc(doc(db,"indice",clave));
+  if(!ix.exists()) throw new Error("No hemos encontrado ningún socio con ese dato.");
+  return ix.data().socioId;
+}
+async function recontarDeps(titularId){
+  const sn = await getDocs(query(collection(db,"socios"), where("titularId","==",titularId)));
+  await updateDoc(doc(db,"socios",titularId),{numDependientes:sn.size});
+}
 const refrescar = () => ruta();
 const ACCIONES = {
   menu(_,el){ const n=$("#nav"); const ab=n.classList.toggle("abierto"); el.setAttribute("aria-expanded",ab); },
   async salir(){ await signOut(auth); location.hash="#/"; },
-  async apuntar(id){ await guardarAsistentes(id,["yo"]); toast("Te has apuntado"); refrescar(); },
+  async apuntar(id){ await guardarAsistentes(id,[S.perfil.id]); toast("Te has apuntado"); refrescar(); },
   async baja(id){ await guardarAsistentes(id,[]); toast("Te has dado de baja"); refrescar(); },
-  async quitarFam(id){
-    if(!confirm("¿Quitar a esta persona de tu familia? También dejará de estar apuntada a las actividades.")) return;
-    for(const a of await leer("actividades")){ const mis = misAsistentes(a); if(mis.includes(id)) await guardarAsistentes(a.id, mis.filter(x=>x!==id)); }
-    await updateDoc(doc(db,"users",S.user.uid),{familiares:(S.perfil.familiares||[]).filter(f=>f.id!==id)});
-    S.perfil = await cargarPerfil(S.user); toast("Persona quitada de tu familia"); refrescar();
-  },
   async recuperar(){
     const email = $("#email")?.value.trim();
     if(!email) return toast("Escribe tu correo en el formulario","error");
     await sendPasswordResetEmail(auth,email); toast("Te hemos enviado un correo para cambiar la contraseña");
   },
   pestana(id){ S.adm.tab=id; S.adm.edit=null; refrescar(); },
-  async estado(id,el){ await updateDoc(doc(db,"users",id),{estado:el.dataset.valor}); toast("Socio actualizado"); refrescar(); },
-  async rol(id,el){ await updateDoc(doc(db,"users",id),{rol:el.dataset.valor}); toast("Socio actualizado"); refrescar(); },
+  async aprobar(id){
+    const x = S.adm.datos.socios.find(z=>z.id===id);
+    const nom = x ? `${x.nombre} ${x.apellidos}` : "esta persona";
+    const como = x?.formaPago==="efectivo" ? `en metálico, entregado a ${x.pagadoA||"un miembro de la junta"}` : "por ingreso o transferencia";
+    if(!confirm(`¿Has comprobado el pago de la cuota de ${nom} (${como})?`)) return;
+    await aprobarSocio(id, true); toast("Socio aprobado"); refrescar();
+  },
+  async registrarCuota(id){ await updateDoc(doc(db,"socios",id),{cuotaAnio:ANIO}); toast("Cuota registrada"); refrescar(); },
+  async copiarIban(){
+    try{ await navigator.clipboard.writeText(String(S.ajustes.iban||"").replace(/\s+/g,"")); toast("IBAN copiado"); }
+    catch{ toast("No se ha podido copiar. Selecciónalo y cópialo a mano.","error"); }
+  },
+  async asignarNumero(id){ await aprobarSocio(id, false); toast("Número asignado"); refrescar(); },
+  async desvincular(id){
+    const x = S.adm.datos.socios.find(z=>z.id===id), titular = x?.titularId;
+    await updateDoc(doc(db,"socios",id),{titularId:null});
+    if(titular) await recontarDeps(titular);
+    toast("Socio sacado de la unidad familiar"); refrescar();
+  },
+  async salirGrupo(){
+    if(!confirm("¿Salir de esta unidad familiar? A partir de ahora te apuntarás tú mismo a las actividades.")) return;
+    await updateDoc(doc(db,"socios",S.user.uid),{titularId:null});
+    S.perfil = await cargarPerfil(S.user); await sincronizarDeps();
+    toast("Has salido de la unidad familiar"); refrescar();
+  },
+  async quitarDep(id){
+    if(!confirm("¿Quitar a este socio de tu unidad familiar? También se le quitará de las actividades en las que lo habías apuntado.")) return;
+    for(const a of await leer("actividades")){ const mis = misAsistentes(a); if(mis.includes(id)) await guardarAsistentes(a.id, mis.filter(x=>x!==id)); }
+    await updateDoc(doc(db,"socios",id),{titularId:null});
+    await sincronizarDeps(); toast("Socio quitado de tu unidad familiar"); refrescar();
+  },
+  async estado(id,el){ await updateDoc(doc(db,"socios",id),{estado:el.dataset.valor}); toast("Socio actualizado"); refrescar(); },
+  async rol(id,el){
+    const x = S.adm.datos.socios.find(z=>z.id===id), nom = x ? `${x.nombre} ${x.apellidos}` : "esta persona", dar = el.dataset.valor==="admin";
+    if(!confirm(dar ? `¿Dar permisos de administrador a ${nom}? Podrá gestionar socios, actividades, noticias y la web.` : `¿Quitar los permisos de administrador a ${nom}?`)) return;
+    await updateDoc(doc(db,"socios",id),{rol:el.dataset.valor});
+    toast(dar ? "Permisos de administrador concedidos" : "Permisos de administrador retirados"); refrescar();
+  },
   elegirApuntar(id){ S.apuntar = {id, paso: S.user ? "form" : "elegir"}; refrescar(); },
   soySocio(){ S.apuntar = null; location.hash = "#/entrar"; },
   noSocio(id){ S.apuntar = {id, paso:"form"}; refrescar(); },
@@ -954,10 +1255,10 @@ function archivoADataURL(file, max=900, q=.78){
   });
 }
 const precio = v => { const n = parseFloat(String(v).replace(",",".")); return Number.isFinite(n) && n>=0 ? n : null; };
-async function imagenDeFormulario(fd, previo){
+async function imagenDeFormulario(fd, previo, max=900){
   if(fd.get("quitarImagen")==="on") return "";
   const file = fd.get("imagenArchivo");
-  if(file && file.size) return await archivoADataURL(file);
+  if(file && file.size) return await archivoADataURL(file, max);
   const url = safeUrl(fd.get("imagenUrl")||"");
   return url || previo || "";
 }
@@ -968,17 +1269,20 @@ const FORMS = {
   async registro(f,fd){
     S.registrando = true;
     try{
-      const nombre = fd.get("nombre").trim(), email = fd.get("email").trim();
+        const nombre = fd.get("nombre").trim(), apellidos = fd.get("apellidos").trim(), email = fd.get("email").trim(), movil = normMovil(fd.get("movil"));
+      if(!nombre || !apellidos) throw new Error("Escribe tu nombre y apellidos.");
+      if(!movil) throw new Error("Escribe un número de móvil válido, de 9 cifras.");
+      const pago = leerPago(fd);
       const cred = await createUserWithEmailAndPassword(auth, email, fd.get("pass"));
-      await updateProfile(cred.user,{displayName:nombre});
-      await setDoc(doc(db,"users",cred.user.uid),{nombre, email, telefono:fd.get("telefono").trim(), familiares:[], rol:"socio", estado:"pendiente", creado:serverTimestamp()});
+      await updateProfile(cred.user,{displayName:`${nombre} ${apellidos}`});
+      await setDoc(doc(db,"socios",cred.user.uid),{nombre, apellidos, movil, email, uid:cred.user.uid, rol:"socio", estado:"pendiente", titularId:null, ...pago, creado:serverTimestamp()});
       S.user = cred.user; S.perfil = await cargarPerfil(cred.user);
     } finally { S.registrando = false; }
     toast("Solicitud enviada. La junta la revisará pronto.");
     location.hash = "#/cuenta"; await ruta();
   },
   async perfil(f,fd){
-    await updateDoc(doc(db,"users",S.user.uid),{nombre:fd.get("nombre").trim(), telefono:fd.get("telefono").trim()});
+    await updateDoc(doc(db,"socios",S.user.uid),{nombre:fd.get("nombre").trim(), apellidos:fd.get("apellidos").trim()});
     S.perfil = await cargarPerfil(S.user); toast("Cambios guardados"); refrescar();
   },
   async votar(f,fd){
@@ -988,7 +1292,7 @@ const FORMS = {
   },
   async actividad(f,fd){
     const id = fd.get("id");
-    const datos = {titulo:fd.get("titulo").trim(), descripcion:fd.get("descripcion").trim(), fecha:fd.get("fecha"), lugar:fd.get("lugar").trim(), aforo:Math.max(0,parseInt(fd.get("aforo"))||0), precioSocio:precio(fd.get("precioSocio")), precioNoSocio:precio(fd.get("precioNoSocio")), imagen:await imagenDeFormulario(fd, S.adm.datos.actividades.find(x=>x.id===id)?.imagen)};
+    const datos = {titulo:fd.get("titulo").trim(), descripcion:fd.get("descripcion").trim(), fecha:fd.get("fecha"), lugar:fd.get("lugar").trim(), aforo:Math.max(0,parseInt(fd.get("aforo"))||0), precioSocio:precio(fd.get("precioSocio")), precioNoSocio:precio(fd.get("precioNoSocio")), imagen:await imagenDeFormulario(fd, S.adm.datos.actividades.find(x=>x.id===id)?.imagen, 1200)};
     if(id) await updateDoc(doc(db,"actividades",id),datos);
     else await addDoc(collection(db,"actividades"),{...datos, inscritos:{}, ocupadas:0, ocupadasExternos:0, creado:serverTimestamp()});
     S.adm.edit=null; toast(id?"Cambios guardados":"Actividad publicada"); refrescar();
@@ -1001,6 +1305,49 @@ const FORMS = {
     else await addDoc(collection(db,"proyectos"),{...datos, creado:serverTimestamp()});
     S.adm.edit=null; toast(id?"Cambios guardados":"Proyecto publicado"); refrescar();
   },
+  async ficha(f,fd){
+    const nombre = fd.get("nombre").trim(), apellidos = fd.get("apellidos").trim(), movil = normMovil(fd.get("movil"));
+    if(!nombre || !apellidos) return toast("Escribe tu nombre y apellidos","error");
+    if(!movil) return toast("Escribe un número de móvil válido, de 9 cifras","error");
+    await setDoc(doc(db,"socios",S.user.uid),{nombre, apellidos, movil, email:S.user.email, uid:S.user.uid, rol:"socio", estado:"pendiente", titularId:null, ...leerPago(fd), creado:serverTimestamp()});
+    S.perfil = await cargarPerfil(S.user); toast("Solicitud enviada. La junta la revisará pronto.");
+    location.hash = "#/cuenta"; await ruta();
+  },
+  async pago(f,fd){
+    await updateDoc(doc(db,"socios",S.user.uid), leerPago(fd));
+    S.perfil = await cargarPerfil(S.user); toast("Forma de pago guardada"); refrescar();
+  },
+  async fechaAlta(f,fd){
+    const v = fd.get("fecha");
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(v||"") || v>hoyISO()) return toast("Escribe una fecha válida, que no sea futura","error");
+    await updateDoc(doc(db,"socios",f.dataset.id),{socioDesde:v}); toast("Fecha de alta guardada"); refrescar();
+  },
+  async vincular(f,fd){
+    const bid = await resolverSocio(fd.get("dato"));
+    if(bid===S.user.uid) throw new Error("Ese eres tú.");
+    try{ await updateDoc(doc(db,"socios",bid),{titularId:S.user.uid}); }
+    catch(e){
+      if(e.code==="permission-denied") throw new Error("No se ha podido añadir. Puede que ese socio ya esté en otra unidad familiar, que no tenga el alta aprobada o que tenga a otros socios a su cargo.");
+      throw e;
+    }
+    await sincronizarDeps(); toast("Socio añadido a tu unidad familiar"); refrescar();
+  },
+  async socioJunta(f,fd){
+    const d = {nombre:fd.get("nombre").trim(), apellidos:fd.get("apellidos").trim(), movil:normMovil(fd.get("movil")), cuotaAnio:fd.get("cuotaPagada")==="on" ? ANIO : null, socioDesde:fd.get("socioDesde")};
+    if(!d.nombre || !d.apellidos) return toast("Escribe nombre y apellidos","error");
+    if(!d.movil) return toast("Escribe un número de móvil válido, de 9 cifras","error");
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(d.socioDesde||"") || d.socioDesde>hoyISO()) return toast("Escribe una fecha de alta válida, que no sea futura","error");
+    await crearSocioJunta(d); toast("Socio añadido"); refrescar();
+  },
+  async unir(f,fd){
+    const a = await resolverSocio(fd.get("titular")), b = await resolverSocio(fd.get("socio"));
+    if(a===b) throw new Error("Son el mismo socio.");
+    const D = S.adm.datos.socios;
+    if(D.find(x=>x.id===a)?.titularId) throw new Error("El titular elegido ya está en la unidad familiar de otro socio.");
+    if(D.some(x=>x.titularId===b)) throw new Error("El socio que se une ya tiene socios a su cargo.");
+    await updateDoc(doc(db,"socios",b),{titularId:a});
+    await recontarDeps(a); toast("Socios unidos"); refrescar();
+  },
   async externo(f,fd){
     const d = {nombre:fd.get("nombre").trim(), apellidos:fd.get("apellidos").trim(), telefono:fd.get("telefono").trim()};
     if(!d.nombre || !d.apellidos) return toast("Escribe tu nombre y apellidos","error");
@@ -1011,12 +1358,6 @@ const FORMS = {
   async asistentes(f,fd){
     await guardarAsistentes(f.dataset.id, fd.getAll("p"));
     toast("Asistentes guardados"); refrescar();
-  },
-  async familiar(f,fd){
-    const lista = [...(S.perfil.familiares||[]), {id:"f"+Date.now().toString(36)+Math.random().toString(36).slice(2,5), nombre:fd.get("nombre").trim(), relacion:fd.get("relacion")}];
-    if(lista.length>12) return toast("Puedes añadir hasta 12 personas","error");
-    await updateDoc(doc(db,"users",S.user.uid),{familiares:lista});
-    S.perfil = await cargarPerfil(S.user); toast("Persona añadida a tu familia"); refrescar();
   },
   async noticia(f,fd){
     const id = fd.get("id");
@@ -1033,7 +1374,7 @@ const FORMS = {
   },
   async ajustes(f,fd){
     const redes = {}; REDES.forEach(([k])=>redes[k]=fd.get("red-"+k).trim());
-    const datos = {nombre:fd.get("nombre").trim(), lema:fd.get("lema").trim(), descripcion:fd.get("descripcion").trim(), email:fd.get("email").trim(), telefono:fd.get("telefono").trim(), whatsappContacto:fd.get("whatsappContacto").trim(), direccion:fd.get("direccion").trim(), redes};
+    const datos = {nombre:fd.get("nombre").trim(), lema:fd.get("lema").trim(), descripcion:fd.get("descripcion").trim(), email:fd.get("email").trim(), telefono:fd.get("telefono").trim(), whatsappContacto:fd.get("whatsappContacto").trim(), direccion:fd.get("direccion").trim(), cuota:fd.get("cuota").trim(), iban:fd.get("iban").trim(), juntaCobro:fd.get("juntaCobro").trim(), redes};
     await setDoc(doc(db,"config","web"),datos);
     S.ajustes = {...AJUSTES_POR_DEFECTO, ...datos}; toast("Cambios guardados"); refrescar();
   }
@@ -1043,6 +1384,11 @@ document.addEventListener("click", async e=>{
   const el = e.target.closest("[data-accion]"); if(!el) return;
   try{ await ACCIONES[el.dataset.accion]?.(el.dataset.id, el); }
   catch(err){ console.error(err); toast(errMsg(err),"error"); }
+});
+document.addEventListener("input", e=>{
+  const i = e.target.closest("[data-filtro]"); if(!i) return;
+  const q = i.value.trim().toLowerCase();
+  document.querySelectorAll("#"+i.dataset.filtro+" li").forEach(li => { li.hidden = !!q && !(li.dataset.texto||"").includes(q); });
 });
 document.addEventListener("submit", async e=>{
   const f = e.target.closest("form[data-form]"); if(!f) return;
@@ -1086,7 +1432,8 @@ window.addEventListener("hashchange", () => { S.apuntar = null; ruta(); });
   onAuthStateChanged(auth, async u=>{
     if(S.registrando) return;
     S.user = u; S.perfil = null;
-    try{ if(u) S.perfil = await cargarPerfil(u); }catch(e){ console.error(e); toast(errMsg(e),"error"); }
+    S.deps = [];
+    try{ if(u){ S.perfil = await cargarPerfil(u); await sincronizarDeps(); } }catch(e){ console.error(e); toast(errMsg(e),"error"); }
     await ruta();
   });
 })();
