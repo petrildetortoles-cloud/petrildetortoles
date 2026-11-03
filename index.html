@@ -15,10 +15,12 @@
   --papel:#F3F6F2; --tinta:#0F2D28; --suave:#4F6660; --linea:#D2DED8; --logo:#111111;
   --marca:#14604C; --marca-claro:#DCEBE3; --sol:#FF6F59; --sobre-sol:#0F2D28;
   --btn-bg:#14604C; --btn-fg:#FFFFFF;
+  --rojo:#C8102E; --rojo-hover:#A50D26; --sobre-rojo:#FFFFFF;
   --banda-bg:#0F4A3B; --banda-fg:#FFFFFF;
   --error:#B3202F; --ok:#1E7A4F;
 }
 html[data-modo="oscuro"]{
+  --rojo:#FF6B6B; --rojo-hover:#FF8A8A; --sobre-rojo:#2A0A0A;
   color-scheme:dark;
   --papel:#0E1F1C; --tinta:#E8F2EE; --suave:#9DB5AD; --linea:#26403A; --logo:var(--tinta);
   --marca:#5FD0A8; --marca-claro:#17342D;
@@ -90,7 +92,8 @@ nav{display:flex;gap:4px;align-items:center;justify-content:center;flex-wrap:wra
 nav a,nav button{padding:.45em .85em;border-radius:999px;color:var(--tinta);text-decoration:none;font:600 .95rem "Instrument Sans",sans-serif;background:none;border:0;cursor:pointer}
 nav a:hover,nav button:hover{background:var(--marca-claro)}
 nav a[aria-current=page]{background:var(--tinta);color:var(--papel)}
-nav .entrar{background:var(--btn-bg);color:var(--btn-fg);margin-left:6px}
+nav .entrar{background:var(--rojo);color:var(--sobre-rojo);margin-left:6px}
+nav .entrar:hover{background:var(--rojo-hover);color:var(--sobre-rojo)}
 .menu-btn{display:none;align-items:center;min-height:44px;padding:.4em 1.1em;border:2px solid var(--tinta);border-radius:999px;background:transparent;color:var(--tinta);font:600 .95rem "Instrument Sans",sans-serif;cursor:pointer}
 .menu-btn[aria-expanded="true"]{background:var(--tinta);color:var(--papel)}
 @media(max-width:1180px){
@@ -169,18 +172,19 @@ nav .entrar{background:var(--btn-bg);color:var(--btn-fg);margin-left:6px}
 .banda{background:var(--banda-bg);color:var(--banda-fg);padding:80px 0}
 .banda a{color:var(--banda-fg)}
 .contacto h2{margin-bottom:32px}
-.contacto-lista{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:28px 40px}
+.contacto-lista{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:28px 48px}
+.contacto-col{display:grid;gap:28px;align-content:start}
 .dato{display:flex;gap:16px;align-items:flex-start;padding-top:14px;border-top:2px solid rgba(255,255,255,.3)}
 .dato .ico{width:38px;height:38px;flex:none;margin-top:2px}
 .dato .txt{display:grid;gap:6px;min-width:0}
 .dato .et{font-weight:600;font-size:1rem;color:rgba(255,255,255,.82)}
 .dato .val{font:800 clamp(1.3rem,2.8vw,2rem)/1.2 "Bricolage Grotesque",sans-serif;letter-spacing:-.02em;color:var(--banda-fg);text-decoration:none;overflow-wrap:anywhere}
 .dato a.val:hover{text-decoration:underline}
-@media(min-width:720px){.dato.ancho{grid-column:span 2}}
 @media(max-width:420px){.dato{gap:12px}.dato .ico{width:30px;height:30px}}
 
 .pie-sitio{border-top:2px solid var(--tinta);padding:36px 0 44px;font-size:.9rem;color:var(--suave)}
-.pie3{display:flex;justify-content:center}
+.pie3{display:flex;flex-direction:column;align-items:center;gap:10px}
+.pie-cif{margin:0;text-align:center}
 .pie-centro{display:flex;align-items:center;justify-content:center;gap:14px;text-align:left}
 .pie-centro .logo{width:40px;height:40px}
 
@@ -304,6 +308,12 @@ nav .entrar{background:var(--btn-bg);color:var(--btn-fg);margin-left:6px}
 .cartel-hero{display:block;position:relative;width:fit-content;max-width:100%;margin:0 auto;transform:rotate(-2deg);border:2px solid var(--tinta);box-shadow:10px 10px 0 var(--sol)}
 .cartel-hero img{display:block;max-width:100%;max-height:560px;width:auto;height:auto}
 
+/* Sobre nosotros */
+.historia{max-width:760px}
+.historia p{font-size:1.1rem;line-height:1.75;margin:0 0 1.2em;max-width:68ch}
+.historia h3{font-size:clamp(1.5rem,3vw,1.9rem);margin:40px 0 14px}
+.historia-img{display:block;width:100%;max-height:460px;object-fit:cover;margin:0 0 32px;border:2px solid var(--tinta)}
+
 /* Imágenes de noticias y actividades */
 .n-img{display:block;width:100%;max-height:380px;object-fit:cover;margin:14px 0 6px}
 .n-img-c{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;margin-bottom:14px}
@@ -405,7 +415,7 @@ const AJUSTES_POR_DEFECTO = {
   nombre: "El Petril de Tórtoles",
   lema: "Asociación cultural",
   descripcion: "Somos la asociación cultural El Petril de Tórtoles. Organizamos actividades abiertas a todo el mundo. Aquí puedes ver lo que hemos hecho y lo que viene, y si eres socio, apuntarte y opinar.",
-  email: "petrildetortoles@gmail.com", telefono: "", whatsappContacto: "605086688", direccion: "", iban: "ES74 2100 4526 3522 0021 6521", titularCuenta: "ASOCIACIÓN CULTURAL EL PETRIL DE TÓRTOLES", cuotaAdulto: "15", cuotaJoven: "10", cuotaInfantil: "0", juntaCobro: "", juntaMandato: "",
+  email: "petrildetortoles@gmail.com", telefono: "", whatsappContacto: "605086688", direccion: "Calle Calvo Sotelo, nº 13, Tórtoles de Esgueva 09312", cif: "G-16435752", iban: "ES74 2100 4526 3522 0021 6521", titularCuenta: "ASOCIACIÓN CULTURAL EL PETRIL DE TÓRTOLES", cuotaAdulto: "15", cuotaJoven: "10", cuotaInfantil: "0", juntaCobro: "", juntaMandato: "",
   redes: { instagram:"https://www.instagram.com/petrildetortoles/", facebook:"https://www.facebook.com/p/El-Petril-de-T%C3%B3rtoles-61559645693769/", youtube:"", tiktok:"", x:"", whatsapp:"https://www.whatsapp.com/channel/0029Vb52hyOGpLHTpZS1Lx1q", web:"" }
 };
 const REDES = [["instagram","Instagram"],["facebook","Facebook"],["youtube","YouTube"],["tiktok","TikTok"],["x","X"],["whatsapp","Canal de WhatsApp"],["web","Otra web"]];
@@ -577,6 +587,7 @@ async function cargarAjustes(){
   if(s.exists()){
     const d = s.data();
     S.ajustes = {...AJUSTES_POR_DEFECTO, ...d, redes:{...AJUSTES_POR_DEFECTO.redes, ...(d.redes||{})}};
+    for(const k of ["direccion","cif"]) if(!S.ajustes[k]) S.ajustes[k] = AJUSTES_POR_DEFECTO[k];
   }
 }
 async function cargarPerfil(u){
@@ -614,13 +625,16 @@ function contactoHTML(){
   const a = S.ajustes, wa = String(a.whatsappContacto||"").replace(/\D/g,"");
   const waVisible = wa.length===9 ? wa.replace(/(\d{3})(\d{2})(\d{2})(\d{2})/,"$1 $2 $3 $4") : (a.whatsappContacto||"");
   const tel = String(a.telefono||"").replace(/[^\d+]/g,"");
-  const dato = (icono, et, valor, extra="") => `<div class="dato ${extra}">${icono}<div class="txt"><span class="et">${et}</span>${valor}</div></div>`;
-  const filas = [
-    a.email ? dato(ICONOS_CONTACTO.correo, "Correo electrónico", `<a class="val" href="mailto:${esc(a.email)}">${esc(a.email)}</a>`, "ancho") : "",
-    wa ? dato(ICONOS_REDES.whatsapp, "WhatsApp", `<a class="val" href="https://wa.me/${wa.length===9?"34"+wa:wa}" target="_blank" rel="noopener">${esc(waVisible)}</a>`) : "",
-    a.telefono ? dato(ICONOS_CONTACTO.telefono, "Teléfono", tel ? `<a class="val" href="tel:${esc(tel)}">${esc(a.telefono)}</a>` : `<span class="val">${esc(a.telefono)}</span>`) : "",
-    a.direccion ? dato(ICONOS_CONTACTO.direccion, "Dirección", `<span class="val">${esc(a.direccion)}</span>`, "ancho") : ""
+  const dato = (icono, et, valor) => `<div class="dato">${icono}<div class="txt"><span class="et">${et}</span>${valor}</div></div>`;
+  const izq = [
+    a.email ? dato(ICONOS_CONTACTO.correo, "Correo electrónico", `<a class="val" href="mailto:${esc(a.email)}">${esc(a.email)}</a>`) : "",
+    a.telefono ? dato(ICONOS_CONTACTO.telefono, "Teléfono", tel ? `<a class="val" href="tel:${esc(tel)}">${esc(a.telefono)}</a>` : `<span class="val">${esc(a.telefono)}</span>`) : ""
   ].join("");
+  const der = [
+    wa ? dato(ICONOS_REDES.whatsapp, "WhatsApp", `<a class="val" href="https://wa.me/${wa.length===9?"34"+wa:wa}" target="_blank" rel="noopener">${esc(waVisible)}</a>`) : "",
+    a.direccion ? dato(ICONOS_CONTACTO.direccion, "Dirección fiscal", `<span class="val">${esc(a.direccion)}</span>`) : ""
+  ].join("");
+  const filas = [izq, der].filter(Boolean).map(c=>`<div class="contacto-col">${c}</div>`).join("");
   return `<div class="contacto"><h2>Contacto</h2>${filas ? `<div class="contacto-lista">${filas}</div>` : "<p>Los datos de contacto aparecerán aquí.</p>"}</div>`;
 }
 function redesCabecera(){
@@ -640,6 +654,7 @@ function shell(main, r){
     <button class="menu-btn" data-accion="menu" aria-expanded="false" aria-controls="nav">Menú</button>
     <nav id="nav" aria-label="Principal">
       ${link("", "Inicio", "inicio")}
+      ${link("sobre","Sobre nosotros","sobre")}
       ${link("noticias","Noticias","noticias")}
       ${link("proyectos","Proyectos","proyectos")}
       ${link("actividades","Actividades","actividades")}
@@ -647,13 +662,14 @@ function shell(main, r){
       ${esSocio()?link("encuestas","Encuestas","encuestas"):""}
       ${esAdmin()?link("admin","Panel de la junta","admin"):""}
       ${S.user
-        ? `${link("cuenta","Mi portal","cuenta")}<button data-accion="salir">Salir</button>`
+        ? `<a class="entrar" href="#/cuenta" ${r==="cuenta"?'aria-current="page"':""}>Mi portal</a><button data-accion="salir">Salir</button>`
         : `<a class="entrar" href="#/entrar">Portal del socio</a>`}
     </nav>
   </div></div>
   <main id="main">${main}</main>
   <footer class="pie-sitio"><div class="contenedor pie3">
     <div class="pie-centro"><span class="logo" aria-hidden="true"></span><span>© ${new Date().getFullYear()} Asociación ${esc(a.nombre)}</span></div>
+    ${a.cif?`<p class="pie-cif">CIF ${esc(a.cif)}</p>`:""}
   </div></footer>`;
 }
 function vacio(t, p){ return `<div class="vacio"><h3>${esc(t)}</h3><p class="suave">${esc(p||"")}</p></div>`; }
@@ -818,6 +834,27 @@ async function vistaJunta(){
     <p class="intro" style="margin-bottom:40px">Estas son las personas que forman la junta de la asociación.</p>
     ${l.length?`<div class="junta-grid">${l.map(miembroJunta).join("")}</div>`:vacio("Todavía no se ha publicado la junta","Aquí aparecerán los cargos y las personas que forman la junta.")}
     ${a.email?`<p style="margin-top:48px">Para hablar con la junta, escribe a <a href="mailto:${esc(a.email)}">${esc(a.email)}</a>.</p>`:""}</section>`;
+}
+async function cargarSobre(){
+  if(S.demo) return {};
+  const sn = await getDoc(doc(db,"config","sobre"));
+  return sn.exists() ? sn.data() : {};
+}
+/* Párrafos separados por una línea en blanco; una línea que empieza por "## " es un subtítulo */
+function textoAHtml(t){
+  return String(t||"").split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean).map(b=>{
+    const l = b.split("\n"); let out = "";
+    if(l[0].startsWith("## ")){ out += `<h3>${esc(l.shift().slice(3).trim())}</h3>`; }
+    if(l.length) out += `<p>${esc(l.join("\n")).replace(/\n/g,"<br>")}</p>`;
+    return out;
+  }).join("");
+}
+async function vistaSobre(){
+  const d = await cargarSobre();
+  return `<section class="contenedor pagina"><h1 class="h-pag">${esc(d.titulo||"Sobre nosotros")}</h1>
+    ${d.texto
+      ? `<div class="historia">${d.imagen?`<img class="historia-img" src="${esc(d.imagen)}" alt="" loading="lazy">`:""}${textoAHtml(d.texto)}</div>`
+      : vacio("Todavía no se ha publicado esta página","La junta puede escribir aquí la historia de la asociación.")}</section>`;
 }
 async function vistaProyectos(){
   const ps = ordenProyectos(await leer("proyectos"));
@@ -1109,7 +1146,7 @@ function resultadosHTML(ops, counts, total){
 /* ============================================================
    Panel de la junta
    ============================================================ */
-const PESTANAS = [["socios","Socios"],["noticias","Noticias"],["actividades","Actividades"],["proyectos","Proyectos"],["junta","La junta"],["encuestas","Encuestas"],["web","Web"]];
+const PESTANAS = [["socios","Socios"],["noticias","Noticias"],["actividades","Actividades"],["proyectos","Proyectos"],["junta","La junta"],["sobre","Sobre nosotros"],["encuestas","Encuestas"],["web","Web"]];
 async function vistaAdmin(){
   if(!esAdmin()) return avisoAcceso("Esta zona es solo para la junta directiva.");
   const D = S.adm.datos, tab = S.adm.tab;
@@ -1119,8 +1156,9 @@ async function vistaAdmin(){
   if(tab==="encuestas") D.encuestas = await leer("encuestas");
   if(tab==="noticias") D.noticias = await leerNoticias();
   if(tab==="junta") D.junta = await leer("junta");
+  if(tab==="sobre") D.sobre = await cargarSobre();
   const pend = D.socios.filter(u=>u.estado==="pendiente").length;
-  const cuerpo = {socios:admSocios, noticias:admNoticias, actividades:admActividades, proyectos:admProyectos, junta:admJunta, encuestas:admEncuestas, web:admWeb}[tab]();
+  const cuerpo = {socios:admSocios, noticias:admNoticias, actividades:admActividades, proyectos:admProyectos, junta:admJunta, sobre:admSobre, encuestas:admEncuestas, web:admWeb}[tab]();
   return `<section class="contenedor pagina"><h1 class="h-pag">Panel de la junta</h1>
     <div class="pestanas">${PESTANAS.map(([k,t])=>`<button class="pest" data-accion="pestana" data-id="${k}" ${tab===k?'aria-current="true"':""}>${t}${k==="socios"&&pend?` (${pend})`:""}</button>`).join("")}</div>
     ${cuerpo}</section>`;
@@ -1339,6 +1377,20 @@ function admJunta(){
       ${lista.length?`<ul class="lista-adm">${lista.map(m=>`<li><div class="cuerpo"><strong>${esc(m.nombre)}</strong> <span class="chip sol">${esc(m.cargo)}</span><br><span class="suave">Orden ${m.orden ?? "—"}</span></div>
         <div class="btns"><button class="btn peq sec" data-accion="editar" data-id="${m.id}">Editar</button><button class="btn peq peligro" data-accion="borrar" data-id="${m.id}" data-col="junta">Eliminar</button></div></li>`).join("")}</ul>`:"<p>Todavía no has añadido a nadie.</p>"}</div></div>`;
 }
+function admSobre(){
+  const d = S.adm.datos.sobre || {};
+  const cuando = d.actualizado?.toDate ? d.actualizado.toDate().toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"}) : "";
+  return `<div class="panel-adm" style="max-width:760px"><h2>Sobre nosotros</h2>
+    <p class="suave" style="margin-top:8px">Aquí se escribe la historia de la asociación y cómo surgió. Cualquier administrador puede editarla, y el texto se ve en la página pública «Sobre nosotros». <a href="#/sobre">Ver la página</a>.</p>
+    ${cuando?`<p class="meta">Última edición: ${cuando}${d.editadoPor?`, por ${esc(d.editadoPor)}`:""}.</p>`:""}
+    <form class="formu" data-form="sobre">
+      <div class="campo"><label for="sb-titulo">Título de la página</label><input id="sb-titulo" name="titulo" maxlength="80" placeholder="Sobre nosotros" value="${esc(d.titulo||"")}"></div>
+      <div class="campo"><label for="sb-texto">Texto</label><textarea id="sb-texto" name="texto" style="min-height:340px" placeholder="Cómo nació la asociación, quiénes la fundaron, qué hacéis...">${esc(d.texto||"")}</textarea>
+        <small>Deja una línea en blanco para separar párrafos. Para poner un subtítulo, escribe una línea que empiece por ## (por ejemplo: ## Los inicios).</small></div>
+      ${campoImagen(d,"Foto o imagen (opcional)")}
+      <div><button class="btn" type="submit">Guardar la página</button></div>
+    </form></div>`;
+}
 function admWeb(){
   const a = S.ajustes;
   return `<div class="panel-adm" style="max-width:640px"><h2>Datos de la web</h2>
@@ -1350,7 +1402,8 @@ function admWeb(){
         <div class="campo"><label for="email">Correo de contacto</label><input id="email" name="email" type="email" value="${esc(a.email)}"></div>
         <div class="campo"><label for="telefono">Teléfono</label><input id="telefono" name="telefono" value="${esc(a.telefono)}"></div></div>
       <div class="campo"><label for="whatsappContacto">WhatsApp de contacto</label><input id="whatsappContacto" name="whatsappContacto" type="tel" value="${esc(a.whatsappContacto)}"></div>
-      <div class="campo"><label for="direccion">Dirección</label><input id="direccion" name="direccion" value="${esc(a.direccion)}"></div>
+      <div class="campo"><label for="direccion">Dirección fiscal</label><input id="direccion" name="direccion" value="${esc(a.direccion)}"></div>
+      <div class="campo"><label for="cif">CIF</label><input id="cif" name="cif" value="${esc(a.cif)}"></div>
       <h3 style="margin-top:12px">Cuota de socio</h3>
       <div class="fila-campos">
         <div class="campo"><label for="cuotaAdulto">Adultos, 18 años o más (€)</label><input id="cuotaAdulto" name="cuotaAdulto" inputmode="decimal" value="${esc(a.cuotaAdulto)}"></div>
@@ -1668,6 +1721,12 @@ const FORMS = {
     await setDoc(doc(db,"socios",S.user.uid,"privado","datos"), {ibanDomiciliacion: ibanDom ?? null}, {merge:true});
     S.perfil = await cargarPerfil(S.user); S.priv = await cargarPrivado(); toast("Forma de pago guardada"); refrescar();
   },
+  async sobre(f,fd){
+    const previo = S.adm.datos.sobre || {};
+    const datos = {titulo:fd.get("titulo").trim(), texto:fd.get("texto").trim(), imagen:await imagenDeFormulario(fd, previo.imagen, 1200), actualizado:serverTimestamp(), editadoPor:`${S.perfil.nombre} ${S.perfil.apellidos}`.trim()};
+    await setDoc(doc(db,"config","sobre"),datos);
+    toast("Página guardada"); refrescar();
+  },
   async junta(f,fd){
     const id = fd.get("id"), previo = S.adm.datos.junta.find(x=>x.id===id);
     const datos = {cargo:fd.get("cargo").trim(), nombre:fd.get("nombre").trim(), orden:Math.max(1,parseInt(fd.get("orden"))||1), imagen:await imagenDeFormulario(fd, previo?.imagen, 600)};
@@ -1755,7 +1814,7 @@ const FORMS = {
   },
   async ajustes(f,fd){
     const redes = {}; REDES.forEach(([k])=>redes[k]=fd.get("red-"+k).trim());
-    const datos = {nombre:fd.get("nombre").trim(), lema:fd.get("lema").trim(), descripcion:fd.get("descripcion").trim(), email:fd.get("email").trim(), telefono:fd.get("telefono").trim(), whatsappContacto:fd.get("whatsappContacto").trim(), direccion:fd.get("direccion").trim(), cuotaAdulto:fd.get("cuotaAdulto").trim(), cuotaJoven:fd.get("cuotaJoven").trim(), cuotaInfantil:fd.get("cuotaInfantil").trim(), iban:fd.get("iban").trim(), titularCuenta:fd.get("titularCuenta").trim(), juntaCobro:fd.get("juntaCobro").trim(), juntaMandato:fd.get("juntaMandato").trim(), redes};
+    const datos = {nombre:fd.get("nombre").trim(), lema:fd.get("lema").trim(), descripcion:fd.get("descripcion").trim(), email:fd.get("email").trim(), telefono:fd.get("telefono").trim(), whatsappContacto:fd.get("whatsappContacto").trim(), direccion:fd.get("direccion").trim(), cif:fd.get("cif").trim(), cuotaAdulto:fd.get("cuotaAdulto").trim(), cuotaJoven:fd.get("cuotaJoven").trim(), cuotaInfantil:fd.get("cuotaInfantil").trim(), iban:fd.get("iban").trim(), titularCuenta:fd.get("titularCuenta").trim(), juntaCobro:fd.get("juntaCobro").trim(), juntaMandato:fd.get("juntaMandato").trim(), redes};
     await setDoc(doc(db,"config","web"),datos);
     S.ajustes = {...AJUSTES_POR_DEFECTO, ...datos}; toast("Cambios guardados"); refrescar();
   }
@@ -1797,7 +1856,7 @@ async function ruta(){
   document.title = S.ajustes.nombre;
   let html;
   try{
-    html = await ({inicio:vistaInicio, proyectos:vistaProyectos, noticias:vistaNoticias, junta:vistaJunta, actividades:vistaActividades, encuestas:vistaEncuestas, cuenta:vistaCuenta, admin:vistaAdmin, entrar:()=>vistaEntrar(query==="registro"?"registro":"entrar")}[key] || vistaInicio)();
+    html = await ({inicio:vistaInicio, proyectos:vistaProyectos, sobre:vistaSobre, noticias:vistaNoticias, junta:vistaJunta, actividades:vistaActividades, encuestas:vistaEncuestas, cuenta:vistaCuenta, admin:vistaAdmin, entrar:()=>vistaEntrar(query==="registro"?"registro":"entrar")}[key] || vistaInicio)();
   }catch(err){
     console.error(err);
     html = `<section class="contenedor pagina"><div class="error-caja"><strong>No se han podido cargar los datos.</strong><br>${esc(errMsg(err))}<br>Revisa que las reglas de Firestore estén publicadas y que tu cuenta tenga permiso.</div></section>`;
