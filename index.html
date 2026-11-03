@@ -985,23 +985,44 @@ function avisoAcceso(msg){
 /* ============================================================
    Encuestas (socios)
    ============================================================ */
+/* Cada socio mayor de edad vota una sola vez. Quien gestiona a otros socios elige con cuál vota. */
+const esMayorEdad = nac => !!nac && edad(nac) >= 18;
+function votantesPosibles(){
+  const p = S.perfil;
+  const yo = {id:p.id, nombre:`${p.nombre} ${p.apellidos}`.trim()+" (tú)", nacimiento:p.nacimiento};
+  if(p.titularId) return [yo];
+  return [yo, ...(S.deps||[]).map(f=>({id:f.id, nombre:`${f.nombre} ${f.apellidos}`.trim(), nacimiento:f.nacimiento}))];
+}
 async function vistaEncuestas(){
   if(!esSocio()) return avisoAcceso("Las encuestas son solo para socios con el alta aprobada.");
   const encs = (await leer("encuestas")).sort(porCreado);
-  const votados = await Promise.all(encs.map(async e => (await getDoc(doc(db,"encuestas",e.id,"votos",S.user.uid))).exists()));
+  const personas = votantesPosibles(), adultos = personas.filter(x=>esMayorEdad(x.nacimiento));
+  const estado = await Promise.all(encs.map(async e => {
+    if(!e.abierta) return null;
+    const ya = await Promise.all(adultos.map(async x => (await getDoc(doc(db,"encuestas",e.id,"votos",x.id))).exists()));
+    return adultos.map((x,i)=>({...x, voto:ya[i]}));
+  }));
+  const sinFecha = !esMayorEdad(S.perfil.nacimiento) && !S.perfil.nacimiento;
   return `<section class="contenedor pagina"><h1 class="h-pag">Encuestas</h1>
-    <p class="intro" style="margin-bottom:32px">Tu voto es secreto para el resto de socios. Los resultados se publican cuando la junta cierra la encuesta.</p>
-    ${encs.length?encs.map((e,i)=>encuestaHTML(e,votados[i])).join(""):vacio("No hay encuestas","Cuando la junta lance una, aparecerá aquí.")}</section>`;
+    <p class="intro" style="margin-bottom:16px">Cada socio mayor de edad vota una sola vez en cada encuesta. Si gestionas a otros socios desde tu cuenta, eliges con cuál de ellos votas. Tu voto es secreto para el resto de socios, y los resultados se publican cuando la junta cierra la encuesta.</p>
+    ${sinFecha?`<p class="aviso">Para votar necesitamos tu fecha de nacimiento, porque solo votan los mayores de edad. <a href="#/cuenta">Indícala en Mi portal</a>.</p>`:""}
+    ${encs.length?encs.map((e,i)=>encuestaHTML(e,estado[i],personas)).join(""):vacio("No hay encuestas","Cuando la junta lance una, aparecerá aquí.")}</section>`;
 }
-function encuestaHTML(e, votado){
-  if(e.abierta){
-    if(votado) return `<article class="enc"><h3>${esc(e.pregunta)}</h3><p style="margin-top:10px"><span class="chip ok">Ya has votado</span> <span class="suave">Verás el resultado cuando se cierre.</span></p></article>`;
-    return `<article class="enc"><h3>${esc(e.pregunta)}</h3>
-      <form data-form="votar" data-id="${e.id}"><div class="opciones">
-        ${e.opciones.map((o,i)=>`<label class="opcion"><input type="radio" name="opcion" value="${i}" required> ${esc(o)}</label>`).join("")}
-      </div><button class="btn" type="submit">Votar</button></form></article>`;
-  }
-  return `<article class="enc"><h3>${esc(e.pregunta)} <span class="chip">Cerrada</span></h3>${resultadosHTML(e.opciones, e.resultados||[], e.totalVotos||0)}</article>`;
+function encuestaHTML(e, adultos, personas){
+  if(!e.abierta) return `<article class="enc"><h3>${esc(e.pregunta)} <span class="chip">Cerrada</span></h3>${resultadosHTML(e.opciones, e.resultados||[], e.totalVotos||0)}</article>`;
+  const cab = `<h3>${esc(e.pregunta)}</h3>`;
+  if(!adultos.length) return `<article class="enc">${cab}<p class="suave" style="margin-top:10px">No puedes votar en esta encuesta: solo votan los mayores de edad.</p></article>`;
+  const pendientes = adultos.filter(a=>!a.voto), ya = adultos.filter(a=>a.voto);
+  const yaTxt = ya.length ? `<p class="meta" style="margin-top:10px"><span class="chip ok">Ya ha votado</span> ${ya.map(a=>esc(a.nombre)).join(", ")}</p>` : "";
+  const menores = personas.some(x=>!esMayorEdad(x.nacimiento)) ? `<p class="meta">Los menores de edad de tu unidad familiar no votan.</p>` : "";
+  if(!pendientes.length) return `<article class="enc">${cab}${yaTxt}${menores}<p class="suave">Ya han votado todas las personas que pueden hacerlo desde tu cuenta. Verás el resultado cuando se cierre.</p></article>`;
+  const quien = pendientes.length>1
+    ? `<div class="campo"><label for="v-${e.id}">¿Con qué cuenta quieres votar?</label><select id="v-${e.id}" name="votante" required>${pendientes.map(x=>`<option value="${esc(x.id)}">${esc(x.nombre)}</option>`).join("")}</select></div>`
+    : `<input type="hidden" name="votante" value="${esc(pendientes[0].id)}"><p class="suave" style="margin-top:10px">Votas como <strong>${esc(pendientes[0].nombre)}</strong>.</p>`;
+  return `<article class="enc">${cab}${yaTxt}
+    <form data-form="votar" data-id="${e.id}">${quien}<div class="opciones">
+      ${e.opciones.map((o,i)=>`<label class="opcion"><input type="radio" name="opcion" value="${i}" required> ${esc(o)}</label>`).join("")}
+    </div><button class="btn" type="submit">Votar</button></form>${menores}</article>`;
 }
 function resultadosHTML(ops, counts, total){
   return `<div style="margin-top:14px">${ops.map((o,i)=>{ const c=counts[i]||0, pc=total?Math.round(c/total*100):0;
@@ -1533,7 +1554,9 @@ const FORMS = {
   },
   async votar(f,fd){
     if(fd.get("opcion")===null) return toast("Elige una opción","error");
-    await setDoc(doc(db,"encuestas",f.dataset.id,"votos",S.user.uid),{opcion:Number(fd.get("opcion")), ts:serverTimestamp()});
+    const quien = fd.get("votante");
+    if(!votantesPosibles().some(x=>x.id===quien && esMayorEdad(x.nacimiento))) return toast("Esa persona no puede votar","error");
+    await setDoc(doc(db,"encuestas",f.dataset.id,"votos",quien),{opcion:Number(fd.get("opcion")), ts:serverTimestamp()});
     toast("Voto registrado"); refrescar();
   },
   async actividad(f,fd){
