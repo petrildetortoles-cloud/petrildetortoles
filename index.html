@@ -289,17 +289,13 @@ import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWith
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ============================================================
-   1) CONFIGURACIÓN: pega aquí los datos de tu proyecto Firebase
-   (Firebase Console > Configuración del proyecto > Tus apps > Web)
+   1) CONEXIÓN CON FIREBASE
+   Los datos de tu proyecto están en el archivo firebase-config.js
+   (se pegan una sola vez; al actualizar index.html no hay que tocarlos)
    ============================================================ */
-const FIREBASE_CONFIG = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: ""
-};
+let FIREBASE_CONFIG = {};
+try{ ({ FIREBASE_CONFIG } = await import("./firebase-config.js")); }
+catch(e){ console.warn("No se ha podido leer firebase-config.js", e); }
 
 /* Paleta de colores: "pino" (verde y coral), "ciruela" (frambuesa y albaricoque) o "ladrillo" (teja y ocre) */
 const TEMA = "pino";
@@ -469,7 +465,7 @@ function shell(main, r){
   const a = S.ajustes;
   const link = (h, t, key) => `<a href="#/${h}" ${r===key?'aria-current="page"':""}>${t}</a>`;
   return `
-  ${S.demo?`<div class="demo">Modo demostración: conecta Firebase en el archivo para activar socios, actividades y encuestas.</div>`:""}
+  ${S.demo?`<div class="demo">Modo demostración: faltan los datos de Firebase en el archivo firebase-config.js. Sin ellos no funcionan los socios, las actividades ni las encuestas.</div>`:""}
   <header class="top"><div class="contenedor barra-top">
     <a class="marca" href="#/"><span class="logo" aria-hidden="true"></span><span>${esc(a.nombre)}</span></a>
     <button class="menu-btn" data-accion="menu" aria-expanded="false" aria-controls="nav">Menú</button>
@@ -689,7 +685,7 @@ async function vistaActividades(){
 function vistaEntrar(modo){
   const reg = modo==="registro";
   if(S.user && !S.perfil) return vistaFicha();
-  if(S.demo) return `<section class="contenedor pagina estrecho"><h1 class="h-pag">Portal del socio</h1><p class="aviso">Para activar el acceso de socios, pega la configuración de Firebase al principio del archivo.</p></section>`;
+  if(S.demo) return `<section class="contenedor pagina estrecho"><h1 class="h-pag">Portal del socio</h1><p class="aviso">Para activar el acceso de socios, pega los datos de Firebase en el archivo firebase-config.js y súbelo junto a index.html.</p></section>`;
   return `<section class="contenedor pagina estrecho">
     <h1 class="h-pag">${reg?"Hazte socio":"Portal del socio"}</h1>
     <div class="pestanas">
