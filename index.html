@@ -785,8 +785,8 @@ function cajaCuota(titulo, persona, cierre, renovacion=false){
 }
 function avisoCuota(){
   const p = S.perfil; if(!p) return "";
-  if(p.estado==="pendiente") return cajaCuota("Para completar tu alta", p, "Cuando la junta confirme el pago, activará tu alta y te dará tu número de socio.");
-  if(p.estado==="aprobado" && (p.cuotaAnio||0) < ANIO) return cajaCuota(`Tienes pendiente de renovar la cuota de ${ANIO}`, p, "Cuando la junta reciba el pago, lo registrará en tu ficha.", true);
+  if(p.estado==="pendiente") return cajaCuota(p.pagoNoRecibido ? "La junta aún no ha recibido tu pago" : "Para completar tu alta", p, "Cuando la junta confirme el pago, activará tu alta y te dará tu número de socio.");
+  if(p.estado==="aprobado" && (p.cuotaAnio||0) < ANIO) return cajaCuota(p.cuotaAnio ? `Tienes pendiente de renovar la cuota de ${ANIO}` : `Tienes pendiente de pagar la cuota de ${ANIO}`, p, "Cuando la junta reciba el pago, lo registrará en tu ficha.", true);
   return "";
 }
 function vistaFicha(){
@@ -807,9 +807,9 @@ function fichaSocio(p){
   let filas;
   if(p.estado==="aprobado"){
     const alDia = (p.cuotaAnio||0) >= ANIO;
-    filas = [["Estado","Activo"], ["Número de socio", p.numero ? `nº ${p.numero}` : "Sin asignar"], ["Socio desde", d ? fechaCorta(d) : "Sin fecha"], ["Antigüedad", d ? antiguedad(d) : "Sin fecha"], [`Cuota ${ANIO}`, alDia ? "Al día" : "Pendiente de renovar"]];
+    filas = [["Estado","Activo"], ["Número de socio", p.numero ? `nº ${p.numero}` : "Sin asignar"], ["Socio desde", d ? fechaCorta(d) : "Sin fecha"], ["Antigüedad", d ? antiguedad(d) : "Sin fecha"], [`Cuota ${ANIO}`, alDia ? "Al día" : (p.cuotaAnio ? "Pendiente de renovar" : "Sin pagar")]];
   } else if(p.estado==="pendiente"){
-    filas = [["Estado","Pendiente de aprobación"], ["Solicitud enviada", d ? fechaCorta(d) : "—"], ["Forma de pago", p.formaPago==="efectivo" ? `En metálico, a ${p.pagadoA||"—"}` : "Ingreso o transferencia"]];
+    filas = [["Estado","Pendiente de aprobación"], ["Solicitud enviada", d ? fechaCorta(d) : "—"], ["Forma de pago", p.formaPago==="efectivo" ? `En metálico, a ${p.pagadoA||"—"}` : "Ingreso o transferencia"], ["Pago", p.pagoNoRecibido ? "La junta aún no lo ha recibido" : "Pendiente de comprobar"]];
   } else {
     filas = [["Estado","Baja o no aprobado"]];
   }
@@ -820,7 +820,7 @@ async function vistaCuenta(){
   if(!S.perfil) return vistaFicha();
   const act = proximas(await leer("actividades")).filter(a=>misAsistentes(a).length);
   const p = S.perfil, deps = S.deps||[], depende = !!p.titularId;
-  const estado = {aprobado:`<span class="chip ok">Socio activo</span> ${(p.cuotaAnio||0)>=ANIO?`<span class="chip ok">Cuota ${ANIO} al día</span>`:`<span class="chip no">Pendiente de renovar ${ANIO}</span>`}`,pendiente:'<span class="chip pend">Pendiente de aprobación</span>',rechazado:'<span class="chip no">Alta no activa</span>'}[p.estado]||"";
+  const estado = {aprobado:`<span class="chip ok">Socio activo</span> ${cuotaChip(p)}`,pendiente:`<span class="chip pend">Pendiente de aprobación</span>${p.pagoNoRecibido?' <span class="chip no">Pago no recibido</span>':""}`,rechazado:'<span class="chip no">Alta no activa</span>'}[p.estado]||"";
   let familia;
   if(p.estado!=="aprobado") familia = `<p class="suave" style="margin-top:8px">Cuando la junta apruebe tu alta podrás unir a otros socios a tu unidad familiar.</p>`;
   else if(depende) familia = `<p style="margin-top:8px">Estás en la unidad familiar de otro socio: es esa persona quien te apunta a las actividades.</p>
@@ -913,7 +913,7 @@ const socioDesdeHTML = x => {
     <details class="mini"><summary>Cambiar fecha de alta</summary><form data-form="fechaAlta" data-id="${x.id}"><input type="date" name="fecha" required value="${esc(d)}" max="${hoyISO()}" aria-label="Fecha de alta"><button class="btn peq" type="submit">Guardar</button></form></details>`;
 };
 const cuotaAlDia = x => (x.cuotaAnio||0) >= ANIO;
-const cuotaChip = x => cuotaAlDia(x) ? `<span class="chip ok">Cuota ${ANIO} al día</span>` : `<span class="chip no">Pendiente de renovar ${ANIO}</span>`;
+const cuotaChip = x => cuotaAlDia(x) ? `<span class="chip ok">Cuota ${ANIO} al día</span>` : (x.cuotaAnio ? `<span class="chip no">Pendiente de renovar ${ANIO}</span>` : `<span class="chip no">Sin pagar la cuota ${ANIO}</span>`);
 const chipEstado = u => ({aprobado:'<span class="chip ok">Activo</span>',pendiente:'<span class="chip pend">Pendiente de aprobación</span>',rechazado:'<span class="chip no">Baja o rechazado</span>'}[u.estado]||"");
 
 function campoImagen(ed, etiqueta="Imagen (opcional)"){
@@ -936,6 +936,8 @@ function admSocios(){
     if(x.estado!=="aprobado") b.push(`<button class="btn peq" data-accion="aprobar" data-id="${x.id}">Aprobar (pago recibido)</button>`);
     if(x.estado==="aprobado" && !x.numero) b.push(`<button class="btn peq" data-accion="asignarNumero" data-id="${x.id}">Asignar número</button>`);
     if(x.estado==="aprobado" && !cuotaAlDia(x)) b.push(`<button class="btn peq" data-accion="registrarCuota" data-id="${x.id}">Registrar cuota ${ANIO}</button>`);
+    if(x.estado==="aprobado" && cuotaAlDia(x)) b.push(`<button class="btn peq sec" data-accion="noPagada" data-id="${x.id}">Marcar cuota ${ANIO} como no pagada</button>`);
+    if(x.estado==="pendiente") b.push(`<button class="btn peq sec" data-accion="pagoNoRecibido" data-id="${x.id}" data-valor="${x.pagoNoRecibido?"0":"1"}">${x.pagoNoRecibido?"Quitar marca de pago no recibido":"Marcar pago no recibido"}</button>`);
     if(x.estado==="pendiente") b.push(`<button class="btn peq peligro" data-accion="estado" data-id="${x.id}" data-valor="rechazado">Rechazar</button>`);
     if(x.estado==="aprobado" && !yo){
       if(x.uid) b.push(`<button class="btn peq sec" data-accion="rol" data-id="${x.id}" data-valor="${x.rol==="admin"?"socio":"admin"}">${x.rol==="admin"?"Quitar administrador":"Hacer administrador"}</button>`);
@@ -944,7 +946,7 @@ function admSocios(){
     if(x.titularId) b.push(`<button class="btn peq sec" data-accion="desvincular" data-id="${x.id}">Sacar de la unidad familiar</button>`);
     return b.join("");
   };
-  const fila = x => `<li data-texto="${esc(`${x.numero||""} ${nombre(x)} ${x.movil||""} ${x.email||""}${x.estado==="aprobado"&&!cuotaAlDia(x)?" pendiente de renovar":""}${x.rol==="admin"?" administrador":""}${x.estado==="pendiente"?" pendiente de aprobación":""}`.toLowerCase())}"><div class="cuerpo"><strong>${x.numero?`Nº ${x.numero}, `:""}${esc(nombre(x))}</strong> ${chipEstado(x)} ${x.estado==="aprobado"?cuotaChip(x):""} ${x.rol==="admin"?'<span class="chip">Administrador</span>':""} ${x.uid?"":'<span class="chip">Sin cuenta</span>'}<br><span class="suave">Móvil ${esc(x.movil||"")}${x.email?`, ${esc(x.email)}`:""}</span>${pagoHTML(x)}${socioDesdeHTML(x)}${x.titularId?`<br><span class="suave">En la unidad familiar de ${esc(etiq(mapa[x.titularId]))}</span>`:""}${(deps[x.id]||[]).length?`<br><span class="suave">Unidad familiar: ${deps[x.id].map(d=>esc(etiq(d))).join(", ")}</span>`:""}</div><div class="btns">${botones(x)}</div></li>`;
+  const fila = x => `<li data-texto="${esc(`${x.numero||""} ${nombre(x)} ${x.movil||""} ${x.email||""}${x.estado==="aprobado"&&!cuotaAlDia(x)?` cuota pendiente ${x.cuotaAnio?"pendiente de renovar":"sin pagar"}`:""}${x.estado==="pendiente"&&x.pagoNoRecibido?" pago no recibido":""}${x.rol==="admin"?" administrador":""}${x.estado==="pendiente"?" pendiente de aprobación":""}`.toLowerCase())}"><div class="cuerpo"><strong>${x.numero?`Nº ${x.numero}, `:""}${esc(nombre(x))}</strong> ${chipEstado(x)} ${x.estado==="aprobado"?cuotaChip(x):""}${x.estado==="pendiente"&&x.pagoNoRecibido?'<span class="chip no">Pago no recibido</span>':""} ${x.rol==="admin"?'<span class="chip">Administrador</span>':""} ${x.uid?"":'<span class="chip">Sin cuenta</span>'}<br><span class="suave">Móvil ${esc(x.movil||"")}${x.email?`, ${esc(x.email)}`:""}</span>${pagoHTML(x)}${socioDesdeHTML(x)}${x.titularId?`<br><span class="suave">En la unidad familiar de ${esc(etiq(mapa[x.titularId]))}</span>`:""}${(deps[x.id]||[]).length?`<br><span class="suave">Unidad familiar: ${deps[x.id].map(d=>esc(etiq(d))).join(", ")}</span>`:""}</div><div class="btns">${botones(x)}</div></li>`;
   return `<div class="panel-adm"><h2>Socios</h2>
     <p class="suave" style="margin-top:8px;max-width:70ch">Los administradores gestionan toda la web. Para dar permisos a un socio, debe tener cuenta y el alta aprobada: pulsa «Hacer administrador» en su ficha. Puedes quitárselos cuando quieras.</p>
     <div class="adm-grid" style="margin-top:12px">
@@ -963,8 +965,14 @@ function admSocios(){
         <div><button class="btn" type="submit">Unir</button></div></form>
     </div>
     ${pendientes?`<p style="margin-top:28px;max-width:70ch"><strong>${pendientes} ${pendientes===1?"solicitud pendiente":"solicitudes pendientes"} de aprobación.</strong> Salen las primeras de la lista. Apruébalas solo cuando hayas comprobado el ingreso de la cuota.</p>`:""}
-    ${sinCuota?`<p class="suave" style="margin-top:28px">${sinCuota} ${sinCuota===1?"socio tiene":"socios tienen"} pendiente de renovar la cuota de ${ANIO}. Escribe «renovar» en el buscador para verlos.</p>`:""}
+    ${sinCuota?`<p class="suave" style="margin-top:28px">${sinCuota} ${sinCuota===1?"socio tiene":"socios tienen"} la cuota de ${ANIO} sin pagar o por renovar. Usa el filtro «Cuota pendiente» para verlos.</p>`:""}
     <div class="campo" style="margin-top:32px;max-width:420px"><label for="buscar-socio">Buscar</label><input id="buscar-socio" type="search" data-filtro="lista-socios" placeholder="Número, nombre o móvil"></div>
+    <div class="btns" style="margin-top:14px">
+      <button type="button" class="btn peq sec" data-accion="filtrar" data-valor="">Todos</button>
+      <button type="button" class="btn peq sec" data-accion="filtrar" data-valor="pendiente de aprobación">Pendientes de aprobación</button>
+      <button type="button" class="btn peq sec" data-accion="filtrar" data-valor="pago no recibido">Pago no recibido</button>
+      <button type="button" class="btn peq sec" data-accion="filtrar" data-valor="cuota pendiente">Cuota pendiente</button>
+    </div>
     ${lista.length?`<ul class="lista-adm" id="lista-socios">${lista.map(fila).join("")}</ul>`:"<p>Todavía no hay socios registrados.</p>"}</div>`;
 }
 function admActividades(){
@@ -1157,11 +1165,11 @@ async function aprobarSocio(id, conCuota=true){
     if(!sn.exists()) throw new Error("Ese socio ya no existe.");
     const socio = sn.data();
     const desde = socio.socioDesde ? {} : {socioDesde:hoyISO()};
-    if(socio.numero){ tx.update(ref,{estado:"aprobado", ...desde, ...(conCuota?{cuotaAnio:ANIO}:{})}); return; }
+    if(socio.numero){ tx.update(ref,{estado:"aprobado", pagoNoRecibido:false, ...desde, ...(conCuota?{cuotaAnio:ANIO}:{})}); return; }
     const mref = doc(db,"indice","m"+socio.movil), m = await tx.get(mref);
     if(m.exists() && m.data().socioId!==id) throw new Error("Ese móvil ya pertenece a otro socio.");
     const numero = (c.exists() ? (c.data().ultimo||0) : 0) + 1;
-    tx.update(ref,{estado:"aprobado", numero, ...desde, ...(conCuota?{cuotaAnio:ANIO}:{})});
+    tx.update(ref,{estado:"aprobado", pagoNoRecibido:false, numero, ...desde, ...(conCuota?{cuotaAnio:ANIO}:{})});
     tx.set(doc(db,"indice","n"+numero),{socioId:id});
     tx.set(mref,{socioId:id});
     tx.set(cont,{ultimo:numero});
@@ -1208,6 +1216,22 @@ const ACCIONES = {
     const como = x?.formaPago==="efectivo" ? `en metálico, entregado a ${x.pagadoA||"un miembro de la junta"}` : "por ingreso o transferencia";
     if(!confirm(`¿Has comprobado el pago de la cuota de ${nom} (${como})?`)) return;
     await aprobarSocio(id, true); toast("Socio aprobado"); refrescar();
+  },
+  async noPagada(id){
+    const x = S.adm.datos.socios.find(z=>z.id===id), nom = x ? `${x.nombre} ${x.apellidos}` : "esta persona";
+    if(!confirm(`¿Marcar la cuota de ${ANIO} de ${nom} como no pagada?`)) return;
+    const desde = x ? fechaAlta(x) : "";
+    await updateDoc(doc(db,"socios",id),{cuotaAnio: desde && Number(desde.slice(0,4))<ANIO ? ANIO-1 : null});
+    toast("Cuota marcada como no pagada"); refrescar();
+  },
+  async pagoNoRecibido(id,el){
+    const marcar = el.dataset.valor==="1";
+    await updateDoc(doc(db,"socios",id),{pagoNoRecibido:marcar});
+    toast(marcar ? "Marcado: pago no recibido" : "Marca quitada"); refrescar();
+  },
+  filtrar(id,el){
+    const i = $("#buscar-socio"); if(!i) return;
+    i.value = el.dataset.valor || ""; i.dispatchEvent(new Event("input",{bubbles:true}));
   },
   async registrarCuota(id){ await updateDoc(doc(db,"socios",id),{cuotaAnio:ANIO}); toast("Cuota registrada"); refrescar(); },
   async copiarIban(){
