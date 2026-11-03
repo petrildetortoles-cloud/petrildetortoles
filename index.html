@@ -168,14 +168,16 @@ nav .entrar{background:var(--btn-bg);color:var(--btn-fg);margin-left:6px}
 /* Banda de redes */
 .banda{background:var(--banda-bg);color:var(--banda-fg);padding:80px 0}
 .banda a{color:var(--banda-fg)}
-.banda-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:56px}
-.redes{list-style:none;margin:28px 0 0;padding:0}
-.redes a{display:flex;align-items:center;gap:.4em;font:800 clamp(2rem,5vw,3.4rem)/1.1 "Bricolage Grotesque",sans-serif;letter-spacing:-.03em;text-decoration:none;padding:4px 0;border-bottom:2px solid rgba(255,255,255,.28)}
-.redes a:hover{border-color:var(--sol)}
-.redes .ico{width:.85em;height:.85em;flex:none}
-.contacto h2{margin-bottom:28px}
-.contacto p{margin:0 0 .7em;font-size:1.1rem}
-@media(max-width:820px){.banda-grid{grid-template-columns:1fr;gap:40px}}
+.contacto h2{margin-bottom:32px}
+.contacto-lista{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:28px 40px}
+.dato{display:flex;gap:16px;align-items:flex-start;padding-top:14px;border-top:2px solid rgba(255,255,255,.3)}
+.dato .ico{width:38px;height:38px;flex:none;margin-top:2px}
+.dato .txt{display:grid;gap:6px;min-width:0}
+.dato .et{font-weight:600;font-size:1rem;color:rgba(255,255,255,.82)}
+.dato .val{font:800 clamp(1.3rem,2.8vw,2rem)/1.2 "Bricolage Grotesque",sans-serif;letter-spacing:-.02em;color:var(--banda-fg);text-decoration:none;overflow-wrap:anywhere}
+.dato a.val:hover{text-decoration:underline}
+@media(min-width:720px){.dato.ancho{grid-column:span 2}}
+@media(max-width:420px){.dato{gap:12px}.dato .ico{width:30px;height:30px}}
 
 .pie-sitio{border-top:2px solid var(--tinta);padding:36px 0 44px;font-size:.9rem;color:var(--suave)}
 .pie3{display:flex;justify-content:center}
@@ -418,6 +420,13 @@ const ICONOS_REDES = {
   web: `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19"/><path d="M12 2.5c2.6 2.7 3.9 5.9 3.9 9.5s-1.3 6.8-3.9 9.5c-2.6-2.7-3.9-5.9-3.9-9.5S9.4 5.2 12 2.5z"/></svg>`
 };
 
+/* Iconos del apartado de contacto */
+const ICONOS_CONTACTO = {
+  correo: `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="15" rx="2.5"/><path d="M3.5 7l8.5 6.2L20.5 7"/></svg>`,
+  telefono: `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`,
+  direccion: `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`
+};
+
 /* ============================================================
    Utilidades
    ============================================================ */
@@ -601,16 +610,18 @@ const ordenProyectos = l => [...l].sort((a,b)=> String(b.fecha||"").localeCompar
 /* ============================================================
    Estructura común
    ============================================================ */
-function contactoPie(){
+function contactoHTML(){
   const a = S.ajustes, wa = String(a.whatsappContacto||"").replace(/\D/g,"");
   const waVisible = wa.length===9 ? wa.replace(/(\d{3})(\d{2})(\d{2})(\d{2})/,"$1 $2 $3 $4") : (a.whatsappContacto||"");
+  const tel = String(a.telefono||"").replace(/[^\d+]/g,"");
+  const dato = (icono, et, valor, extra="") => `<div class="dato ${extra}">${icono}<div class="txt"><span class="et">${et}</span>${valor}</div></div>`;
   const filas = [
-    a.email ? `<p>Correo electrónico: <a href="mailto:${esc(a.email)}">${esc(a.email)}</a></p>` : "",
-    wa ? `<p>WhatsApp: <a href="https://wa.me/${wa.length===9?"34"+wa:wa}" target="_blank" rel="noopener">${esc(waVisible)}</a></p>` : "",
-    a.telefono ? `<p>Teléfono: ${esc(a.telefono)}</p>` : "",
-    a.direccion ? `<p>${esc(a.direccion)}</p>` : ""
+    a.email ? dato(ICONOS_CONTACTO.correo, "Correo electrónico", `<a class="val" href="mailto:${esc(a.email)}">${esc(a.email)}</a>`, "ancho") : "",
+    wa ? dato(ICONOS_REDES.whatsapp, "WhatsApp", `<a class="val" href="https://wa.me/${wa.length===9?"34"+wa:wa}" target="_blank" rel="noopener">${esc(waVisible)}</a>`) : "",
+    a.telefono ? dato(ICONOS_CONTACTO.telefono, "Teléfono", tel ? `<a class="val" href="tel:${esc(tel)}">${esc(a.telefono)}</a>` : `<span class="val">${esc(a.telefono)}</span>`) : "",
+    a.direccion ? dato(ICONOS_CONTACTO.direccion, "Dirección", `<span class="val">${esc(a.direccion)}</span>`, "ancho") : ""
   ].join("");
-  return `<div class="contacto"><h2>Contacto</h2>${filas || "<p>Los datos de contacto aparecerán aquí.</p>"}</div>`;
+  return `<div class="contacto"><h2>Contacto</h2>${filas ? `<div class="contacto-lista">${filas}</div>` : "<p>Los datos de contacto aparecerán aquí.</p>"}</div>`;
 }
 function redesCabecera(){
   return REDES.map(([k,t])=>[k,t,safeUrl(S.ajustes.redes[k])]).filter(([,,u])=>u)
@@ -755,15 +766,8 @@ function ticket(a){
     <h2>${esc(a.titulo)}</h2></div>
     <div class="ticket-b"><span>${esc(a.lugar||"Lugar por confirmar")}</span><span>${libres===null?"Sin límite":(libres>0?libres+" plazas libres":"Completo")}</span></div></a>`;
 }
-function bandaRedes(){
-  const a = S.ajustes;
-  const redes = REDES.map(([k,t])=>[k,t,safeUrl(a.redes[k])]).filter(([,,u])=>u);
-  return `<section class="banda"><div class="contenedor banda-grid">
-    <div><h2>Síguenos</h2>
-      ${redes.length?`<ul class="redes">${redes.map(([k,t,u])=>`<li><a href="${esc(u)}" target="_blank" rel="noopener">${ICONOS_REDES[k]||""}<span>${t}</span></a></li>`).join("")}</ul>`
-        :`<p style="margin-top:20px">Los enlaces a nuestras redes aparecerán aquí.</p>`}
-    </div>
-    ${contactoPie()}</div></section>`;
+function bandaContacto(){
+  return `<section class="banda"><div class="contenedor">${contactoHTML()}</div></section>`;
 }
 
 /* ============================================================
@@ -798,7 +802,7 @@ async function vistaInicio(){
     <div class="seccion-cab"><h2>Lo que hemos hecho</h2><a href="#/proyectos">Ver todos los proyectos</a></div>
     ${ps.length?`<div class="rejilla">${ps.map(tarjetaProyecto).join("")}</div>`:vacio("Todavía no hay proyectos publicados","La junta puede añadirlos desde el panel.")}
   </section>
-  ${bandaRedes()}`;
+  ${bandaContacto()}`;
 }
 function miembroJunta(m,i){
   const foto = m.imagen
