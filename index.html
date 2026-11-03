@@ -229,6 +229,7 @@ footer{padding:28px 0 40px;font-size:.9rem;color:var(--suave)}
 .ficha dd{margin:2px 0 0;font:700 1.2rem/1.2 "Bricolage Grotesque",sans-serif}
 .mini{margin-top:6px}
 .mini summary{cursor:pointer;color:var(--marca);font-size:.9rem}
+.mini label{display:flex;gap:6px;align-items:center;font-size:.9rem}
 .mini form{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
 .mini input{padding:.4em .6em;border:2px solid var(--tinta);border-radius:6px;background:var(--papel);color:var(--tinta);font:inherit}
 
@@ -329,7 +330,7 @@ const AJUSTES_POR_DEFECTO = {
   nombre: "El Petril de Tórtoles",
   lema: "Asociación cultural",
   descripcion: "Somos la asociación cultural El Petril de Tórtoles. Organizamos actividades abiertas a todo el mundo. Aquí puedes ver lo que hemos hecho y lo que viene, y si eres socio, apuntarte y opinar.",
-  email: "petrildetortoles@gmail.com", telefono: "", whatsappContacto: "605086688", direccion: "", iban: "", cuota: "", juntaCobro: "", juntaMandato: "",
+  email: "petrildetortoles@gmail.com", telefono: "", whatsappContacto: "605086688", direccion: "", iban: "", cuotaAdulto: "15", cuotaJoven: "10", cuotaInfantil: "0", juntaCobro: "", juntaMandato: "",
   redes: { instagram:"https://www.instagram.com/petrildetortoles/", facebook:"https://www.facebook.com/p/El-Petril-de-T%C3%B3rtoles-61559645693769/", youtube:"", tiktok:"", x:"", whatsapp:"https://www.whatsapp.com/channel/0029Vb52hyOGpLHTpZS1Lx1q", web:"" }
 };
 const REDES = [["instagram","Instagram"],["facebook","Facebook"],["youtube","YouTube"],["tiktok","TikTok"],["x","X"],["whatsapp","Canal de WhatsApp"],["web","Otra web"]];
@@ -360,6 +361,23 @@ function antiguedad(iso){
 }
 /* Fecha de alta: la que ha puesto la junta; si no hay, la de la solicitud */
 const fechaAlta = x => x.socioDesde || (x.creado?.toDate ? aLocalInput(x.creado.toDate()).slice(0,10) : "");
+function edad(iso){
+  const [y,m,d] = String(iso).split("-").map(Number), h = new Date();
+  let e = h.getFullYear() - y;
+  if(h.getMonth()+1 < m || (h.getMonth()+1===m && h.getDate()<d)) e--;
+  return e;
+}
+/* Tramos de cuota: menores de 12, de 12 a 17 y de 18 en adelante */
+const tramo = iso => { if(!iso) return "adulto"; const e = edad(iso); return e<12 ? "infantil" : (e<18 ? "joven" : "adulto"); };
+const numCuota = v => { const n = parseFloat(String(v ?? "").replace(",",".")); return Number.isFinite(n) ? n : null; };
+function cuotaNumero(iso){ const a = S.ajustes; return numCuota({adulto:a.cuotaAdulto, joven:a.cuotaJoven, infantil:a.cuotaInfantil}[tramo(iso)]); }
+function nacimientoPermitido(v){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(v||"") || v>hoyISO()) throw new Error("Escribe tu fecha de nacimiento.");
+  const e = edad(v);
+  if(e>110) throw new Error("Revisa la fecha de nacimiento.");
+  if(e<14) throw new Error("Para darse de alta, los menores de 14 años necesitan la autorización de su padre, madre o tutor. Contacta con la junta.");
+  return v;
+}
 const ANIO = new Date().getFullYear();
 const ibanBonito = v => String(v||"").replace(/\s+/g,"").replace(/(.{4})/g,"$1 ").trim();
 const soloDigitos = v => String(v||"").replace(/\D/g,"");
@@ -729,7 +747,8 @@ function vistaEntrar(modo){
         <div class="campo"><label for="nombre">Nombre</label><input id="nombre" name="nombre" required maxlength="60" autocomplete="given-name"></div>
         <div class="campo"><label for="apellidos">Apellidos</label><input id="apellidos" name="apellidos" required maxlength="100" autocomplete="family-name"></div>
       </div>
-      <div class="campo"><label for="movil">Número de móvil</label><input id="movil" name="movil" type="tel" required autocomplete="tel"><small>Con tu móvil o con tu número de socio, otro socio podrá añadirte a su unidad familiar.</small></div>`:""}
+      <div class="campo"><label for="movil">Número de móvil</label><input id="movil" name="movil" type="tel" required autocomplete="tel"><small>Con tu móvil o con tu número de socio, otro socio podrá añadirte a su unidad familiar.</small></div>
+      <div class="campo"><label for="nacimiento">Fecha de nacimiento</label><input id="nacimiento" name="nacimiento" type="date" required max="${hoyISO()}" data-calc="cuota"><small>Según la edad se aplica una cuota u otra.</small></div>`:""}
       <div class="campo"><label for="email">Correo electrónico</label><input id="email" name="email" type="email" required autocomplete="email"></div>
       <div class="campo"><label for="pass">Contraseña</label><input id="pass" name="pass" type="password" required minlength="6" autocomplete="${reg?"new-password":"current-password"}">${reg?`<small>Mínimo 6 caracteres.</small>`:""}</div>
       ${reg?camposPago(null):""}
@@ -746,19 +765,20 @@ function leerPago(fd){
   }
   return {formaPago:"ingreso", pagadoA:null};
 }
-function importeCuota(){
-  const n = parseFloat(String(S.ajustes.cuota||"").replace(",","."));
-  return Number.isFinite(n) ? eur(n) : "";
+function importeCuota(iso){ const n = cuotaNumero(iso); return n===null ? "" : eur(n); }
+function tramosTexto(){
+  const f = n => n===null ? "sin definir" : (n===0 ? "gratuita" : eur(n)), a = S.ajustes;
+  return `${f(numCuota(a.cuotaAdulto))} para mayores de edad, ${f(numCuota(a.cuotaJoven))} de 12 a 17 años y ${f(numCuota(a.cuotaInfantil))} para menores de 12`;
 }
 /* Opciones de pago de la cuota: ingreso o metálico (con el miembro de la junta que lo recibe) */
 function camposPago(p){
-  const iban = ibanBonito(S.ajustes.iban), importe = importeCuota(), junta = listaJunta(), efectivo = p?.formaPago==="efectivo";
+  const iban = ibanBonito(S.ajustes.iban), importe = p ? importeCuota(p.nacimiento) : "", junta = listaJunta(), efectivo = p?.formaPago==="efectivo";
   const concepto = p ? `Cuota socio ${p.nombre} ${p.apellidos}` : "Cuota socio y tu nombre y apellidos";
   const campoReceptor = junta.length
     ? `<select name="receptor" aria-label="Miembro de la junta"><option value="">Elige el miembro de la junta</option>${junta.map(n=>`<option ${efectivo&&p.pagadoA===n?"selected":""}>${esc(n)}</option>`).join("")}</select>`
     : `<input name="receptor" maxlength="80" placeholder="Nombre del miembro de la junta" value="${efectivo?esc(p.pagadoA||""):""}" aria-label="Miembro de la junta">`;
   return `<fieldset class="pago"><legend>Pago de la cuota anual${importe?` (${importe})`:""}</legend>
-    <p class="suave" style="margin:0">Tu alta se activa cuando la junta comprueba el pago. Elige cómo vas a pagar.</p>
+    <p class="suave" style="margin:0">${p?"":`Cuota anual: ${tramosTexto()}. `}Tu alta se activa cuando la junta comprueba el pago. Elige cómo vas a pagar. <strong id="cuota-aplicable"></strong></p>
     <div class="pago-op"><label class="opcion"><input type="radio" name="formaPago" value="ingreso" ${efectivo?"":"checked"}><span>Ingreso o transferencia a la cuenta de la asociación</span></label>
       <div class="detalle">${iban
         ? `<p class="iban">${esc(iban)}</p><p>Concepto: <strong>${esc(concepto)}</strong>. También puedes programarlo en tu banco como pago periódico.</p><p><button type="button" class="btn peq sec" data-accion="copiarIban">Copiar IBAN</button></p>`
@@ -768,7 +788,8 @@ function camposPago(p){
   </fieldset>`;
 }
 function cajaCuota(titulo, persona, cierre, renovacion=false){
-  const importe = importeCuota(), iban = ibanBonito(S.ajustes.iban);
+  if(persona && cuotaNumero(persona.nacimiento)===0) return `<div class="cuota"><p><strong>Cuota gratuita</strong></p><p>No tienes que pagar cuota. La junta aprobará tu alta.</p></div>`;
+  const importe = importeCuota(persona?.nacimiento), iban = ibanBonito(S.ajustes.iban);
   const concepto = persona ? `Cuota socio ${persona.nombre} ${persona.apellidos}`.trim() : "Cuota socio y tu nombre y apellidos";
   const efectivo = !renovacion && persona?.formaPago==="efectivo";
   const cuerpo = efectivo
@@ -786,7 +807,7 @@ function cajaCuota(titulo, persona, cierre, renovacion=false){
 function avisoCuota(){
   const p = S.perfil; if(!p) return "";
   if(p.estado==="pendiente") return cajaCuota(p.pagoNoRecibido ? "La junta aún no ha recibido tu pago" : "Para completar tu alta", p, "Cuando la junta confirme el pago, activará tu alta y te dará tu número de socio.");
-  if(p.estado==="aprobado" && (p.cuotaAnio||0) < ANIO) return cajaCuota(p.cuotaAnio ? `Tienes pendiente de renovar la cuota de ${ANIO}` : `Tienes pendiente de pagar la cuota de ${ANIO}`, p, "Cuando la junta reciba el pago, lo registrará en tu ficha.", true);
+  if(p.estado==="aprobado" && !cuotaAlDia(p)) return cajaCuota(p.cuotaAnio ? `Tienes pendiente de renovar la cuota de ${ANIO}` : `Tienes pendiente de pagar la cuota de ${ANIO}`, p, "Cuando la junta reciba el pago, lo registrará en tu ficha.", true);
   return "";
 }
 function vistaFicha(){
@@ -798,6 +819,7 @@ function vistaFicha(){
         <div class="campo"><label for="apellidos">Apellidos</label><input id="apellidos" name="apellidos" required maxlength="100"></div>
       </div>
       <div class="campo"><label for="movil">Número de móvil</label><input id="movil" name="movil" type="tel" required></div>
+      <div class="campo"><label for="nacimiento">Fecha de nacimiento</label><input id="nacimiento" name="nacimiento" type="date" required max="${hoyISO()}" data-calc="cuota"><small>Según la edad se aplica una cuota u otra.</small></div>
       ${camposPago(null)}
       <div><button class="btn" type="submit">Enviar solicitud</button></div>
     </form></section>`;
@@ -806,8 +828,8 @@ function fichaSocio(p){
   const d = fechaAlta(p);
   let filas;
   if(p.estado==="aprobado"){
-    const alDia = (p.cuotaAnio||0) >= ANIO;
-    filas = [["Estado","Activo"], ["Número de socio", p.numero ? `nº ${p.numero}` : "Sin asignar"], ["Socio desde", d ? fechaCorta(d) : "Sin fecha"], ["Antigüedad", d ? antiguedad(d) : "Sin fecha"], [`Cuota ${ANIO}`, alDia ? "Al día" : (p.cuotaAnio ? "Pendiente de renovar" : "Sin pagar")]];
+    const alDia = cuotaAlDia(p);
+    filas = [["Estado","Activo"], ["Número de socio", p.numero ? `nº ${p.numero}` : "Sin asignar"], ["Socio desde", d ? fechaCorta(d) : "Sin fecha"], ["Antigüedad", d ? antiguedad(d) : "Sin fecha"], [`Cuota ${ANIO}`, cuotaGratis(p) ? "Gratuita" : alDia ? "Al día" : (p.cuotaAnio ? "Pendiente de renovar" : "Sin pagar")]];
   } else if(p.estado==="pendiente"){
     filas = [["Estado","Pendiente de aprobación"], ["Solicitud enviada", d ? fechaCorta(d) : "—"], ["Forma de pago", p.formaPago==="efectivo" ? `En metálico, a ${p.pagadoA||"—"}` : "Ingreso o transferencia"], ["Pago", p.pagoNoRecibido ? "La junta aún no lo ha recibido" : "Pendiente de comprobar"]];
   } else {
@@ -906,14 +928,23 @@ async function vistaAdmin(){
     ${cuerpo}</section>`;
 }
 const pagoHTML = x => x.formaPago ? `<br><span class="suave">Pago del alta: ${x.formaPago==="efectivo" ? `en metálico, entregado a ${esc(x.pagadoA||"—")}` : "ingreso o transferencia (compruébalo en el banco)"}</span>` : "";
+const nacimientoHTML = x => {
+  const n = cuotaNumero(x.nacimiento);
+  const txt = x.nacimiento ? `Nacido el ${fechaCorta(x.nacimiento)} (${edad(x.nacimiento)} años)` : "Sin fecha de nacimiento";
+  return `<br><span class="suave">${txt}, cuota ${n===null ? "sin definir" : (n===0 ? "gratuita" : eur(n))}</span>`;
+};
 const socioDesdeHTML = x => {
   if(x.estado!=="aprobado") return "";
   const d = fechaAlta(x);
   return `<br><span class="suave">${d?`Socio desde ${fechaCorta(d)} (${antiguedad(d)})`:"Sin fecha de alta"}</span>
-    <details class="mini"><summary>Cambiar fecha de alta</summary><form data-form="fechaAlta" data-id="${x.id}"><input type="date" name="fecha" required value="${esc(d)}" max="${hoyISO()}" aria-label="Fecha de alta"><button class="btn peq" type="submit">Guardar</button></form></details>`;
+    <details class="mini"><summary>Editar fechas</summary>
+      <form data-form="fechaAlta" data-id="${x.id}"><label>Fecha de alta <input type="date" name="fecha" required value="${esc(d)}" max="${hoyISO()}"></label><button class="btn peq" type="submit">Guardar</button></form>
+      <form data-form="nacimiento" data-id="${x.id}"><label>Nacimiento <input type="date" name="fecha" required value="${esc(x.nacimiento||"")}" max="${hoyISO()}"></label><button class="btn peq" type="submit">Guardar</button></form>
+    </details>`;
 };
-const cuotaAlDia = x => (x.cuotaAnio||0) >= ANIO;
-const cuotaChip = x => cuotaAlDia(x) ? `<span class="chip ok">Cuota ${ANIO} al día</span>` : (x.cuotaAnio ? `<span class="chip no">Pendiente de renovar ${ANIO}</span>` : `<span class="chip no">Sin pagar la cuota ${ANIO}</span>`);
+const cuotaGratis = x => cuotaNumero(x.nacimiento)===0;
+const cuotaAlDia = x => cuotaGratis(x) || (x.cuotaAnio||0) >= ANIO;
+const cuotaChip = x => cuotaGratis(x) ? `<span class="chip ok">Cuota gratuita</span>` : cuotaAlDia(x) ? `<span class="chip ok">Cuota ${ANIO} al día</span>` : (x.cuotaAnio ? `<span class="chip no">Pendiente de renovar ${ANIO}</span>` : `<span class="chip no">Sin pagar la cuota ${ANIO}</span>`);
 const chipEstado = u => ({aprobado:'<span class="chip ok">Activo</span>',pendiente:'<span class="chip pend">Pendiente de aprobación</span>',rechazado:'<span class="chip no">Baja o rechazado</span>'}[u.estado]||"");
 
 function campoImagen(ed, etiqueta="Imagen (opcional)"){
@@ -936,7 +967,7 @@ function admSocios(){
     if(x.estado!=="aprobado") b.push(`<button class="btn peq" data-accion="aprobar" data-id="${x.id}">Aprobar (pago recibido)</button>`);
     if(x.estado==="aprobado" && !x.numero) b.push(`<button class="btn peq" data-accion="asignarNumero" data-id="${x.id}">Asignar número</button>`);
     if(x.estado==="aprobado" && !cuotaAlDia(x)) b.push(`<button class="btn peq" data-accion="registrarCuota" data-id="${x.id}">Registrar cuota ${ANIO}</button>`);
-    if(x.estado==="aprobado" && cuotaAlDia(x)) b.push(`<button class="btn peq sec" data-accion="noPagada" data-id="${x.id}">Marcar cuota ${ANIO} como no pagada</button>`);
+    if(x.estado==="aprobado" && cuotaAlDia(x) && !cuotaGratis(x)) b.push(`<button class="btn peq sec" data-accion="noPagada" data-id="${x.id}">Marcar cuota ${ANIO} como no pagada</button>`);
     if(x.estado==="pendiente") b.push(`<button class="btn peq sec" data-accion="pagoNoRecibido" data-id="${x.id}" data-valor="${x.pagoNoRecibido?"0":"1"}">${x.pagoNoRecibido?"Quitar marca de pago no recibido":"Marcar pago no recibido"}</button>`);
     if(x.estado==="pendiente") b.push(`<button class="btn peq peligro" data-accion="estado" data-id="${x.id}" data-valor="rechazado">Rechazar</button>`);
     if(x.estado==="aprobado" && !yo){
@@ -946,7 +977,7 @@ function admSocios(){
     if(x.titularId) b.push(`<button class="btn peq sec" data-accion="desvincular" data-id="${x.id}">Sacar de la unidad familiar</button>`);
     return b.join("");
   };
-  const fila = x => `<li data-texto="${esc(`${x.numero||""} ${nombre(x)} ${x.movil||""} ${x.email||""}${x.estado==="aprobado"&&!cuotaAlDia(x)?` cuota pendiente ${x.cuotaAnio?"pendiente de renovar":"sin pagar"}`:""}${x.estado==="pendiente"&&x.pagoNoRecibido?" pago no recibido":""}${x.rol==="admin"?" administrador":""}${x.estado==="pendiente"?" pendiente de aprobación":""}`.toLowerCase())}"><div class="cuerpo"><strong>${x.numero?`Nº ${x.numero}, `:""}${esc(nombre(x))}</strong> ${chipEstado(x)} ${x.estado==="aprobado"?cuotaChip(x):""}${x.estado==="pendiente"&&x.pagoNoRecibido?'<span class="chip no">Pago no recibido</span>':""} ${x.rol==="admin"?'<span class="chip">Administrador</span>':""} ${x.uid?"":'<span class="chip">Sin cuenta</span>'}<br><span class="suave">Móvil ${esc(x.movil||"")}${x.email?`, ${esc(x.email)}`:""}</span>${pagoHTML(x)}${socioDesdeHTML(x)}${x.titularId?`<br><span class="suave">En la unidad familiar de ${esc(etiq(mapa[x.titularId]))}</span>`:""}${(deps[x.id]||[]).length?`<br><span class="suave">Unidad familiar: ${deps[x.id].map(d=>esc(etiq(d))).join(", ")}</span>`:""}</div><div class="btns">${botones(x)}</div></li>`;
+  const fila = x => `<li data-texto="${esc(`${x.numero||""} ${nombre(x)} ${x.movil||""} ${x.email||""}${x.estado==="aprobado"&&!cuotaAlDia(x)?` cuota pendiente ${x.cuotaAnio?"pendiente de renovar":"sin pagar"}`:""}${x.estado==="pendiente"&&x.pagoNoRecibido?" pago no recibido":""}${x.rol==="admin"?" administrador":""}${x.estado==="pendiente"?" pendiente de aprobación":""}`.toLowerCase())}"><div class="cuerpo"><strong>${x.numero?`Nº ${x.numero}, `:""}${esc(nombre(x))}</strong> ${chipEstado(x)} ${x.estado==="aprobado"?cuotaChip(x):""}${x.estado==="pendiente"&&x.pagoNoRecibido?'<span class="chip no">Pago no recibido</span>':""} ${x.rol==="admin"?'<span class="chip">Administrador</span>':""} ${x.uid?"":'<span class="chip">Sin cuenta</span>'}<br><span class="suave">Móvil ${esc(x.movil||"—")}${x.email?`, ${esc(x.email)}`:""}</span>${nacimientoHTML(x)}${pagoHTML(x)}${socioDesdeHTML(x)}${x.titularId?`<br><span class="suave">En la unidad familiar de ${esc(etiq(mapa[x.titularId]))}</span>`:""}${(deps[x.id]||[]).length?`<br><span class="suave">Unidad familiar: ${deps[x.id].map(d=>esc(etiq(d))).join(", ")}</span>`:""}</div><div class="btns">${botones(x)}</div></li>`;
   return `<div class="panel-adm"><h2>Socios</h2>
     <p class="suave" style="margin-top:8px;max-width:70ch">Los administradores gestionan toda la web. Para dar permisos a un socio, debe tener cuenta y el alta aprobada: pulsa «Hacer administrador» en su ficha. Puedes quitárselos cuando quieras.</p>
     <div class="adm-grid" style="margin-top:12px">
@@ -955,7 +986,8 @@ function admSocios(){
           <div class="campo"><label for="sj-nombre">Nombre</label><input id="sj-nombre" name="nombre" required maxlength="60"></div>
           <div class="campo"><label for="sj-apellidos">Apellidos</label><input id="sj-apellidos" name="apellidos" required maxlength="100"></div>
         </div>
-        <div class="campo"><label for="sj-movil">Número de móvil</label><input id="sj-movil" name="movil" type="tel" required><small>Recibe su número de socio al guardarlo. No necesita cuenta.</small></div>
+        <div class="campo"><label for="sj-movil">Número de móvil</label><input id="sj-movil" name="movil" type="tel"><small>Obligatorio para mayores de edad. Un menor puede usar el de su padre o madre, o dejarlo en blanco. Recibe su número de socio al guardarlo y no necesita cuenta.</small></div>
+        <div class="campo"><label for="sj-nac">Fecha de nacimiento</label><input id="sj-nac" name="nacimiento" type="date" required max="${hoyISO()}"><small>Define la cuota: ${tramosTexto()}.</small></div>
         <div class="campo"><label for="sj-desde">Socio desde</label><input id="sj-desde" name="socioDesde" type="date" required value="${hoyISO()}" max="${hoyISO()}"><small>Si ya era socio de antes, pon la fecha en que se hizo socio.</small></div>
         <label class="chk"><input type="checkbox" name="cuotaPagada" checked> Ha pagado la cuota de ${ANIO}</label>
         <div><button class="btn" type="submit">Añadir socio</button></div></form>
@@ -1110,7 +1142,11 @@ function admWeb(){
       <div class="campo"><label for="direccion">Dirección</label><input id="direccion" name="direccion" value="${esc(a.direccion)}"></div>
       <h3 style="margin-top:12px">Cuota de socio</h3>
       <div class="fila-campos">
-        <div class="campo"><label for="cuota">Cuota anual (€)</label><input id="cuota" name="cuota" inputmode="decimal" value="${esc(a.cuota)}"></div>
+        <div class="campo"><label for="cuotaAdulto">Adultos, 18 años o más (€)</label><input id="cuotaAdulto" name="cuotaAdulto" inputmode="decimal" value="${esc(a.cuotaAdulto)}"></div>
+        <div class="campo"><label for="cuotaJoven">De 12 a 17 años (€)</label><input id="cuotaJoven" name="cuotaJoven" inputmode="decimal" value="${esc(a.cuotaJoven)}"></div>
+      </div>
+      <div class="fila-campos">
+        <div class="campo"><label for="cuotaInfantil">Menores de 12 años (€)</label><input id="cuotaInfantil" name="cuotaInfantil" inputmode="decimal" value="${esc(a.cuotaInfantil)}"></div>
         <div class="campo"><label for="iban">IBAN de la asociación</label><input id="iban" name="iban" value="${esc(a.iban)}" placeholder="ES00 0000 0000 0000 0000 0000"></div>
       </div>
       <div class="campo"><label for="juntaCobro">Miembros de la junta que pueden cobrar en metálico</label><textarea id="juntaCobro" name="juntaCobro" placeholder="Un nombre por línea">${esc(a.juntaCobro)}</textarea><small>Quien pague en metálico elegirá uno de estos nombres. Si lo dejas vacío, escribirá el nombre a mano.</small></div>
@@ -1166,24 +1202,28 @@ async function aprobarSocio(id, conCuota=true){
     const socio = sn.data();
     const desde = socio.socioDesde ? {} : {socioDesde:hoyISO()};
     if(socio.numero){ tx.update(ref,{estado:"aprobado", pagoNoRecibido:false, ...desde, ...(conCuota?{cuotaAnio:ANIO}:{})}); return; }
-    const mref = doc(db,"indice","m"+socio.movil), m = await tx.get(mref);
-    if(m.exists() && m.data().socioId!==id) throw new Error("Ese móvil ya pertenece a otro socio.");
+    const menor = !!socio.nacimiento && edad(socio.nacimiento) < 18;
+    const mref = socio.movil ? doc(db,"indice","m"+socio.movil) : null, m = mref ? await tx.get(mref) : null;
+    const ocupado = !!m && m.exists() && m.data().socioId!==id;
+    if(ocupado && !menor) throw new Error("Ese móvil ya pertenece a otro socio.");
     const numero = (c.exists() ? (c.data().ultimo||0) : 0) + 1;
     tx.update(ref,{estado:"aprobado", pagoNoRecibido:false, numero, ...desde, ...(conCuota?{cuotaAnio:ANIO}:{})});
     tx.set(doc(db,"indice","n"+numero),{socioId:id});
-    tx.set(mref,{socioId:id});
+    if(mref && !ocupado) tx.set(mref,{socioId:id});
     tx.set(cont,{ultimo:numero});
   });
 }
 async function crearSocioJunta(d){
-  const ref = doc(collection(db,"socios")), cont = doc(db,"config","contador"), mref = doc(db,"indice","m"+d.movil);
+  const ref = doc(collection(db,"socios")), cont = doc(db,"config","contador"), mref = d.movil ? doc(db,"indice","m"+d.movil) : null;
+  const menor = edad(d.nacimiento) < 18;
   await runTransaction(db, async tx => {
-    const c = await tx.get(cont), m = await tx.get(mref);
-    if(m.exists()) throw new Error("Ese móvil ya pertenece a otro socio.");
+    const c = await tx.get(cont), m = mref ? await tx.get(mref) : null;
+    const ocupado = !!m && m.exists();
+    if(ocupado && !menor) throw new Error("Ese móvil ya pertenece a otro socio.");
     const numero = (c.exists() ? (c.data().ultimo||0) : 0) + 1;
-    tx.set(ref,{nombre:d.nombre, apellidos:d.apellidos, movil:d.movil, uid:null, rol:"socio", estado:"aprobado", titularId:null, numero, cuotaAnio:d.cuotaAnio ?? null, socioDesde:d.socioDesde, creado:serverTimestamp()});
+    tx.set(ref,{nombre:d.nombre, apellidos:d.apellidos, movil:d.movil||"", nacimiento:d.nacimiento, uid:null, rol:"socio", estado:"aprobado", titularId:null, numero, cuotaAnio:d.cuotaAnio ?? null, socioDesde:d.socioDesde, creado:serverTimestamp()});
     tx.set(doc(db,"indice","n"+numero),{socioId:ref.id});
-    tx.set(mref,{socioId:ref.id});
+    if(mref && !ocupado) tx.set(mref,{socioId:ref.id});
     tx.set(cont,{ultimo:numero});
   });
 }
@@ -1214,7 +1254,7 @@ const ACCIONES = {
     const x = S.adm.datos.socios.find(z=>z.id===id);
     const nom = x ? `${x.nombre} ${x.apellidos}` : "esta persona";
     const como = x?.formaPago==="efectivo" ? `en metálico, entregado a ${x.pagadoA||"un miembro de la junta"}` : "por ingreso o transferencia";
-    if(!confirm(`¿Has comprobado el pago de la cuota de ${nom} (${como})?`)) return;
+    if(!confirm(x && cuotaGratis(x) ? `¿Aprobar el alta de ${nom}? Su cuota es gratuita.` : `¿Has comprobado el pago de la cuota de ${nom} (${como})?`)) return;
     await aprobarSocio(id, true); toast("Socio aprobado"); refrescar();
   },
   async noPagada(id){
@@ -1345,10 +1385,11 @@ const FORMS = {
         const nombre = fd.get("nombre").trim(), apellidos = fd.get("apellidos").trim(), email = fd.get("email").trim(), movil = normMovil(fd.get("movil"));
       if(!nombre || !apellidos) throw new Error("Escribe tu nombre y apellidos.");
       if(!movil) throw new Error("Escribe un número de móvil válido, de 9 cifras.");
+      const nac = nacimientoPermitido(fd.get("nacimiento"));
       const pago = leerPago(fd);
       const cred = await createUserWithEmailAndPassword(auth, email, fd.get("pass"));
       await updateProfile(cred.user,{displayName:`${nombre} ${apellidos}`});
-      await setDoc(doc(db,"socios",cred.user.uid),{nombre, apellidos, movil, email, uid:cred.user.uid, rol:"socio", estado:"pendiente", titularId:null, ...pago, creado:serverTimestamp()});
+      await setDoc(doc(db,"socios",cred.user.uid),{nombre, apellidos, movil, email, uid:cred.user.uid, rol:"socio", estado:"pendiente", titularId:null, nacimiento:nac, ...pago, creado:serverTimestamp()});
       S.user = cred.user; S.perfil = await cargarPerfil(cred.user);
     } finally { S.registrando = false; }
     toast("Solicitud enviada. La junta la revisará pronto.");
@@ -1382,7 +1423,7 @@ const FORMS = {
     const nombre = fd.get("nombre").trim(), apellidos = fd.get("apellidos").trim(), movil = normMovil(fd.get("movil"));
     if(!nombre || !apellidos) return toast("Escribe tu nombre y apellidos","error");
     if(!movil) return toast("Escribe un número de móvil válido, de 9 cifras","error");
-    await setDoc(doc(db,"socios",S.user.uid),{nombre, apellidos, movil, email:S.user.email, uid:S.user.uid, rol:"socio", estado:"pendiente", titularId:null, ...leerPago(fd), creado:serverTimestamp()});
+    await setDoc(doc(db,"socios",S.user.uid),{nombre, apellidos, movil, email:S.user.email, uid:S.user.uid, rol:"socio", estado:"pendiente", titularId:null, nacimiento:nacimientoPermitido(fd.get("nacimiento")), ...leerPago(fd), creado:serverTimestamp()});
     S.perfil = await cargarPerfil(S.user); toast("Solicitud enviada. La junta la revisará pronto.");
     location.hash = "#/cuenta"; await ruta();
   },
@@ -1396,6 +1437,11 @@ const FORMS = {
     if(id) await updateDoc(doc(db,"junta",id),datos);
     else await addDoc(collection(db,"junta"),{...datos, creado:serverTimestamp()});
     S.adm.edit = null; toast(id?"Cambios guardados":"Miembro añadido a la junta"); refrescar();
+  },
+  async nacimiento(f,fd){
+    const v = fd.get("fecha");
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(v||"") || v>hoyISO() || edad(v)>110) return toast("Escribe una fecha de nacimiento válida","error");
+    await updateDoc(doc(db,"socios",f.dataset.id),{nacimiento:v}); toast("Fecha de nacimiento guardada"); refrescar();
   },
   async fechaAlta(f,fd){
     const v = fd.get("fecha");
@@ -1413,9 +1459,11 @@ const FORMS = {
     await sincronizarDeps(); toast("Socio añadido a tu unidad familiar"); refrescar();
   },
   async socioJunta(f,fd){
-    const d = {nombre:fd.get("nombre").trim(), apellidos:fd.get("apellidos").trim(), movil:normMovil(fd.get("movil")), cuotaAnio:fd.get("cuotaPagada")==="on" ? ANIO : null, socioDesde:fd.get("socioDesde")};
+    const d = {nombre:fd.get("nombre").trim(), apellidos:fd.get("apellidos").trim(), movil:normMovil(fd.get("movil")), cuotaAnio:fd.get("cuotaPagada")==="on" ? ANIO : null, socioDesde:fd.get("socioDesde"), nacimiento:fd.get("nacimiento")};
     if(!d.nombre || !d.apellidos) return toast("Escribe nombre y apellidos","error");
-    if(!d.movil) return toast("Escribe un número de móvil válido, de 9 cifras","error");
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(d.nacimiento||"") || d.nacimiento>hoyISO()) return toast("Escribe una fecha de nacimiento válida","error");
+    if(String(fd.get("movil")||"").trim() && !d.movil) return toast("El móvil no es válido: escribe 9 cifras","error");
+    if(!d.movil && edad(d.nacimiento)>=18) return toast("El móvil es obligatorio para mayores de edad","error");
     if(!/^\d{4}-\d{2}-\d{2}$/.test(d.socioDesde||"") || d.socioDesde>hoyISO()) return toast("Escribe una fecha de alta válida, que no sea futura","error");
     await crearSocioJunta(d); toast("Socio añadido"); refrescar();
   },
@@ -1454,7 +1502,7 @@ const FORMS = {
   },
   async ajustes(f,fd){
     const redes = {}; REDES.forEach(([k])=>redes[k]=fd.get("red-"+k).trim());
-    const datos = {nombre:fd.get("nombre").trim(), lema:fd.get("lema").trim(), descripcion:fd.get("descripcion").trim(), email:fd.get("email").trim(), telefono:fd.get("telefono").trim(), whatsappContacto:fd.get("whatsappContacto").trim(), direccion:fd.get("direccion").trim(), cuota:fd.get("cuota").trim(), iban:fd.get("iban").trim(), juntaCobro:fd.get("juntaCobro").trim(), juntaMandato:fd.get("juntaMandato").trim(), redes};
+    const datos = {nombre:fd.get("nombre").trim(), lema:fd.get("lema").trim(), descripcion:fd.get("descripcion").trim(), email:fd.get("email").trim(), telefono:fd.get("telefono").trim(), whatsappContacto:fd.get("whatsappContacto").trim(), direccion:fd.get("direccion").trim(), cuotaAdulto:fd.get("cuotaAdulto").trim(), cuotaJoven:fd.get("cuotaJoven").trim(), cuotaInfantil:fd.get("cuotaInfantil").trim(), iban:fd.get("iban").trim(), juntaCobro:fd.get("juntaCobro").trim(), juntaMandato:fd.get("juntaMandato").trim(), redes};
     await setDoc(doc(db,"config","web"),datos);
     S.ajustes = {...AJUSTES_POR_DEFECTO, ...datos}; toast("Cambios guardados"); refrescar();
   }
@@ -1466,6 +1514,12 @@ document.addEventListener("click", async e=>{
   catch(err){ console.error(err); toast(errMsg(err),"error"); }
 });
 document.addEventListener("input", e=>{
+  const c = e.target.closest('[data-calc="cuota"]');
+  if(c){
+    const out = $("#cuota-aplicable");
+    if(out){ const n = c.value ? cuotaNumero(c.value) : null; out.textContent = n===null ? "" : (n===0 ? "Tu cuota es gratuita." : `Tu cuota anual: ${eur(n)}.`); }
+    return;
+  }
   const i = e.target.closest("[data-filtro]"); if(!i) return;
   const q = i.value.trim().toLowerCase();
   document.querySelectorAll("#"+i.dataset.filtro+" li").forEach(li => { li.hidden = !!q && !(li.dataset.texto||"").includes(q); });
