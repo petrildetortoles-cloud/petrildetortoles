@@ -392,6 +392,7 @@ function edad(iso){
 const tramo = iso => { if(!iso) return "adulto"; const e = edad(iso); return e<12 ? "infantil" : (e<18 ? "joven" : "adulto"); };
 const numCuota = v => { const n = parseFloat(String(v ?? "").replace(",",".")); return Number.isFinite(n) ? n : null; };
 function cuotaNumero(iso){ const a = S.ajustes; return numCuota({adulto:a.cuotaAdulto, joven:a.cuotaJoven, infantil:a.cuotaInfantil}[tramo(iso)]); }
+const categoriaEdad = iso => !iso ? "" : ({adulto:"Mayor de edad", joven:"Menor de edad, de 12 a 17 años", infantil:"Menor de 12 años"}[tramo(iso)]);
 function nacimientoPermitido(v){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(v||"") || v>hoyISO()) throw new Error("Escribe tu fecha de nacimiento.");
   const e = edad(v);
@@ -872,6 +873,11 @@ function fichaSocio(p){
   } else {
     filas = [["Estado","Baja o no aprobado"]];
   }
+  const c = cuotaNumero(p.nacimiento);
+  const nacFilas = p.nacimiento
+    ? [["Fecha de nacimiento", `${fechaCorta(p.nacimiento)} (${edad(p.nacimiento)} años)`], ["Categoría", `${categoriaEdad(p.nacimiento)}${c===null ? "" : `, cuota ${c===0 ? "gratuita" : eur(c)}`}`]]
+    : [["Fecha de nacimiento", "Sin indicar"]];
+  filas.splice(1, 0, ...nacFilas);
   return `<dl class="ficha">${filas.map(([k,v])=>`<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>`;
 }
 async function vistaCuenta(){
@@ -894,7 +900,7 @@ async function vistaCuenta(){
     ${avisoEstado()}
     ${avisoCuota()}
     <div class="adm-grid">
-      <div><h2 style="font-size:1.8rem">Mis datos</h2><p style="margin-top:8px">${estado}${p.rol==="admin"?' <span class="chip">Administrador</span>':""}</p>
+      <div><h2 style="font-size:1.8rem">Mis datos</h2><p style="margin-top:8px">${estado}${p.rol==="admin"?' <span class="chip">Administrador</span>':""}${p.nacimiento?` <span class="chip">${edad(p.nacimiento)>=18?"Mayor de edad":"Menor de edad"}</span>`:""}</p>
         ${fichaSocio(p)}
         <form class="formu" data-form="perfil">
           <div class="fila-campos">
@@ -902,6 +908,9 @@ async function vistaCuenta(){
             <div class="campo"><label for="apellidos">Apellidos</label><input id="apellidos" name="apellidos" required maxlength="100" value="${esc(p.apellidos)}"></div>
           </div>
           <div class="campo"><label>Móvil</label><input value="${esc(p.movil)}" disabled><small>Si necesitas cambiarlo, escribe a la junta.</small></div>
+          ${p.nacimiento
+            ? `<div class="campo"><label>Fecha de nacimiento</label><input value="${esc(fechaCorta(p.nacimiento))}" disabled><small>${esc(categoriaEdad(p.nacimiento))}. Si hay un error, escribe a la junta.</small></div>`
+            : `<div class="campo"><label for="nacimiento">Fecha de nacimiento</label><input id="nacimiento" name="nacimiento" type="date" max="${hoyISO()}"><small>Indícala una vez para que se te aplique la cuota que te corresponde. Después solo la puede cambiar la junta.</small></div>`}
           <div class="campo"><label>Correo</label><input value="${esc(p.email||S.user.email)}" disabled></div>
           <div><button class="btn" type="submit">Guardar cambios</button></div>
         </form>
@@ -967,7 +976,7 @@ async function vistaAdmin(){
 const pagoHTML = x => x.formaPago ? `<br><span class="suave">Pago del alta: ${x.formaPago==="efectivo" ? `en metálico, entregado a ${esc(x.pagadoA||"—")}` : "ingreso o transferencia (compruébalo en el banco)"}</span>` : "";
 const nacimientoHTML = x => {
   const n = cuotaNumero(x.nacimiento);
-  const txt = x.nacimiento ? `Nacido el ${fechaCorta(x.nacimiento)} (${edad(x.nacimiento)} años)` : "Sin fecha de nacimiento";
+  const txt = x.nacimiento ? `Nacido el ${fechaCorta(x.nacimiento)} (${edad(x.nacimiento)} años${edad(x.nacimiento)<18?", menor de edad":""})` : "Sin fecha de nacimiento";
   return `<br><span class="suave">${txt}, cuota ${n===null ? "sin definir" : (n===0 ? "gratuita" : eur(n))}</span>`;
 };
 const socioDesdeHTML = x => {
@@ -1433,7 +1442,9 @@ const FORMS = {
     location.hash = "#/cuenta"; await ruta();
   },
   async perfil(f,fd){
-    await updateDoc(doc(db,"socios",S.user.uid),{nombre:fd.get("nombre").trim(), apellidos:fd.get("apellidos").trim()});
+    const datos = {nombre:fd.get("nombre").trim(), apellidos:fd.get("apellidos").trim()};
+    if(!S.perfil.nacimiento && fd.get("nacimiento")) datos.nacimiento = nacimientoPermitido(fd.get("nacimiento"));
+    await updateDoc(doc(db,"socios",S.user.uid),datos);
     S.perfil = await cargarPerfil(S.user); toast("Cambios guardados"); refrescar();
   },
   async votar(f,fd){
