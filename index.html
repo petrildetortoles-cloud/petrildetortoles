@@ -257,6 +257,13 @@ footer{padding:28px 0 40px;font-size:.9rem;color:var(--suave)}
 .cuota p:last-child{margin-bottom:0}
 .iban{font:800 1.35rem/1.2 "Bricolage Grotesque",sans-serif;letter-spacing:.03em;overflow-wrap:anywhere}
 
+/* Actividades anteriores */
+.fila.pasada{grid-template-columns:96px 1fr}
+.pasada .a-img{max-height:260px}
+.anio{margin-bottom:28px}
+.anio summary{cursor:pointer;font:800 1.7rem/1.1 "Bricolage Grotesque",sans-serif;letter-spacing:-.02em;padding:10px 0 16px}
+@media(max-width:680px){.fila.pasada{grid-template-columns:72px 1fr}}
+
 /* Carteles de actividades */
 .carteles{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:44px 32px;align-items:start}
 .cartel-marco{position:relative;border:2px solid var(--tinta);background:var(--marca-claro)}
@@ -721,11 +728,28 @@ async function vistaNoticias(){
     
     ${l.length?l.map(n=>noticiaHTML(n)).join(""):vacio("No hay noticias por ahora","Aquí publicaremos avisos, novedades y la información de la lotería.")}</section>`;
 }
+const anteriores = lista => lista.filter(a => a.fecha && !(new Date(a.fecha).getTime() > Date.now()-6*36e5)).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+function filaPasada(a){
+  const d = new Date(a.fecha);
+  return `<article class="fila pasada">
+    <div><div class="f-dia">${d.getDate()}</div><div class="f-mes">${MESES[d.getMonth()]} ${d.getFullYear()}</div></div>
+    <div><h3>${esc(a.titulo)}</h3>
+      ${a.descripcion?`<p>${esc(a.descripcion)}</p>`:""}
+      <p class="meta">${fechaLarga(d)}${a.lugar?`, ${esc(a.lugar)}`:""}</p>
+      ${a.imagen?`<img class="a-img" src="${esc(a.imagen)}" alt="Cartel de ${esc(a.titulo)}" loading="lazy">`:""}</div>
+  </article>`;
+}
 async function vistaActividades(){
-  const act = proximas(await leer("actividades"));
+  const todas = await leer("actividades");
+  const act = proximas(todas), pas = anteriores(todas);
+  const porAnio = {};
+  pas.forEach(a => { (porAnio[new Date(a.fecha).getFullYear()] ||= []).push(a); });
+  const anios = Object.keys(porAnio).sort((a,b)=>b-a);
+  const pasadas = anios.map((y,i)=>`<details class="anio" ${i===0?"open":""}><summary>${y} <span class="suave">(${porAnio[y].length})</span></summary><div class="programa">${porAnio[y].map(filaPasada).join("")}</div></details>`).join("");
   return `<section class="contenedor pagina"><h1 class="h-pag">Actividades</h1>
     ${avisoEstado()}
-    ${act.length?`<div class="programa">${act.map(filaActividad).join("")}</div>`:vacio("No hay actividades programadas","Cuando la junta publique una nueva, la verás aquí.")}</section>`;
+    ${act.length?`<div class="programa">${act.map(filaActividad).join("")}</div>`:vacio("No hay actividades programadas","Cuando la junta publique una nueva, la verás aquí.")}
+    ${pas.length?`<h2 style="margin:72px 0 20px">Actividades anteriores</h2>${pasadas}`:""}</section>`;
 }
 
 /* ============================================================
