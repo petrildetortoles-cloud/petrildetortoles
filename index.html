@@ -73,15 +73,21 @@ img{max-width:100%;display:block}
 /* Aviso demo */
 .demo{background:var(--sol);color:var(--sobre-sol);padding:10px 24px;text-align:center;font-weight:600;font-size:.95rem}
 
-/* Cabecera */
-.top{border-bottom:2px solid var(--tinta);background:var(--papel);position:sticky;top:0;z-index:10}
-.barra-top{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:66px}
-.marca{display:flex;align-items:center;gap:12px;font:800 1.3rem/1 "Bricolage Grotesque",sans-serif;color:var(--tinta);text-decoration:none;letter-spacing:-.02em}
+/* Cabecera: logotipo y nombre centrados, redes arriba a la derecha y el menú debajo */
+.cab{background:var(--papel)}
+.cab-in{position:relative;display:flex;justify-content:center;padding-top:30px;padding-bottom:24px}
+.marca{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;color:var(--tinta);text-decoration:none}
+.marca-nombre{font:800 clamp(2rem,4.6vw,3.3rem)/1 "Bricolage Grotesque",sans-serif;letter-spacing:-.03em}
 .logo{display:block;width:52px;height:52px;flex:none;background-color:var(--logo);-webkit-mask:var(--logo-mini) center/contain no-repeat;mask:var(--logo-mini) center/contain no-repeat}
+.marca .logo{width:112px;height:112px}
 .logo-banda{display:block;width:170px;height:170px;margin-bottom:28px;background-color:var(--banda-fg);-webkit-mask:var(--logo-full) center/contain no-repeat;mask:var(--logo-full) center/contain no-repeat}
-.pie{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.pie .logo{width:40px;height:40px}
-nav{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.cab-redes{position:absolute;top:14px;right:max(24px,env(safe-area-inset-right));display:flex;gap:2px}
+.cab-redes a{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;color:var(--tinta)}
+.cab-redes a:hover{background:var(--marca-claro);color:var(--marca)}
+.cab-redes .ico{width:24px;height:24px}
+.barra-nav{position:sticky;top:0;z-index:10;background:var(--papel);border-top:1px solid var(--linea);border-bottom:2px solid var(--tinta)}
+.barra-nav-in{display:flex;justify-content:center;align-items:center;min-height:56px}
+nav{display:flex;gap:4px;align-items:center;justify-content:center;flex-wrap:wrap}
 nav a,nav button{padding:.45em .85em;border-radius:999px;color:var(--tinta);text-decoration:none;font:600 .95rem "Instrument Sans",sans-serif;background:none;border:0;cursor:pointer}
 nav a:hover,nav button:hover{background:var(--marca-claro)}
 nav a[aria-current=page]{background:var(--tinta);color:var(--papel)}
@@ -90,10 +96,17 @@ nav .entrar{background:var(--btn-bg);color:var(--btn-fg);margin-left:6px}
 .menu-btn[aria-expanded="true"]{background:var(--tinta);color:var(--papel)}
 @media(max-width:1180px){
   .menu-btn{display:inline-flex}
-  nav{display:none;position:absolute;left:0;right:0;top:100%;background:var(--papel);border-bottom:2px solid var(--tinta);padding:12px 24px 18px;flex-direction:column;align-items:stretch}
+  nav{display:none;position:absolute;left:0;right:0;top:100%;background:var(--papel);border-bottom:2px solid var(--tinta);padding:12px 24px 18px;flex-direction:column;align-items:stretch;justify-content:flex-start}
   nav.abierto{display:flex}
   nav a,nav button{text-align:left;padding:.7em .9em}
   nav .entrar{margin:6px 0 0;text-align:center}
+}
+@media(max-width:560px){
+  .cab-in{padding-top:58px;padding-bottom:18px}
+  .cab.sin-redes .cab-in{padding-top:26px}
+  .marca .logo{width:88px;height:88px}
+  .marca-nombre{font-size:clamp(1.7rem,8vw,2.1rem)}
+  .cab-redes{top:8px;right:max(12px,env(safe-area-inset-right))}
 }
 
 /* Botones y chips */
@@ -162,10 +175,21 @@ nav .entrar{background:var(--btn-bg);color:var(--btn-fg);margin-left:6px}
 .redes a{display:flex;align-items:center;gap:.4em;font:800 clamp(2rem,5vw,3.4rem)/1.1 "Bricolage Grotesque",sans-serif;letter-spacing:-.03em;text-decoration:none;padding:4px 0;border-bottom:2px solid rgba(255,255,255,.28)}
 .redes a:hover{border-color:var(--sol)}
 .redes .ico{width:.85em;height:.85em;flex:none}
-.contacto p{margin:0 0 .5em}
+.banda-logo{display:flex;justify-content:flex-end;align-items:center}
+.banda-logo .logo-banda{margin:0}
+@media(max-width:820px){.banda-logo{justify-content:flex-start}}
 @media(max-width:820px){.banda-grid{grid-template-columns:1fr;gap:40px}}
 
-footer{padding:28px 0 40px;font-size:.9rem;color:var(--suave)}
+.pie-sitio{border-top:2px solid var(--tinta);padding:36px 0 44px;font-size:.9rem;color:var(--suave)}
+.pie3{display:grid;grid-template-columns:1fr auto 1fr;gap:24px;align-items:center}
+.pie-contacto p{margin:0 0 .35em}
+.pie-contacto strong{display:block;margin-bottom:.45em;color:var(--tinta);font-size:1rem}
+.pie-centro{display:flex;align-items:center;justify-content:center;gap:14px;text-align:left}
+.pie-centro .logo{width:40px;height:40px}
+@media(max-width:900px){
+  .pie3{grid-template-columns:1fr;gap:28px}
+  .pie-der{display:none}
+}
 
 /* Formularios */
 .formu{display:grid;gap:16px;margin-top:24px}
@@ -329,8 +353,6 @@ footer{padding:28px 0 40px;font-size:.9rem;color:var(--suave)}
   .carteles,.junta-grid{gap:36px 20px}
 }
 @media(max-width:420px){
-  .marca{font-size:1.1rem;gap:10px}
-  .logo{width:44px;height:44px}
   .h-pag{font-size:clamp(2.2rem,11vw,2.6rem)}
 }
 @media(max-width:380px){
@@ -589,13 +611,31 @@ const ordenProyectos = l => [...l].sort((a,b)=> String(b.fecha||"").localeCompar
 /* ============================================================
    Estructura común
    ============================================================ */
+function contactoPie(){
+  const a = S.ajustes, wa = String(a.whatsappContacto||"").replace(/\D/g,"");
+  const waVisible = wa.length===9 ? wa.replace(/(\d{3})(\d{2})(\d{2})(\d{2})/,"$1 $2 $3 $4") : (a.whatsappContacto||"");
+  const filas = [
+    a.email ? `<p>Correo electrónico: <a href="mailto:${esc(a.email)}">${esc(a.email)}</a></p>` : "",
+    wa ? `<p>WhatsApp: <a href="https://wa.me/${wa.length===9?"34"+wa:wa}" target="_blank" rel="noopener">${esc(waVisible)}</a></p>` : "",
+    a.telefono ? `<p>Teléfono: ${esc(a.telefono)}</p>` : "",
+    a.direccion ? `<p>${esc(a.direccion)}</p>` : ""
+  ].join("");
+  return `<div class="pie-contacto"><strong>Contacto</strong>${filas || "<p>Los datos de contacto aparecerán aquí.</p>"}</div>`;
+}
+function redesCabecera(){
+  return REDES.map(([k,t])=>[k,t,safeUrl(S.ajustes.redes[k])]).filter(([,,u])=>u)
+    .map(([k,t,u])=>`<a href="${esc(u)}" target="_blank" rel="noopener" aria-label="${esc(t)}" title="${esc(t)}">${ICONOS_REDES[k]||""}</a>`).join("");
+}
 function shell(main, r){
-  const a = S.ajustes;
+  const a = S.ajustes, redes = redesCabecera();
   const link = (h, t, key) => `<a href="#/${h}" ${r===key?'aria-current="page"':""}>${t}</a>`;
   return `
   ${S.demo?`<div class="demo">Modo demostración: faltan los datos de Firebase en el archivo firebase-config.js. Sin ellos no funcionan los socios, las actividades ni las encuestas.</div>`:""}
-  <header class="top"><div class="contenedor barra-top">
-    <a class="marca" href="#/"><span class="logo" aria-hidden="true"></span><span>${esc(a.nombre)}</span></a>
+  <header class="cab ${redes?"":"sin-redes"}"><div class="contenedor cab-in">
+    <a class="marca" href="#/"><span class="logo" aria-hidden="true"></span><span class="marca-nombre">${esc(a.nombre)}</span></a>
+    ${redes?`<div class="cab-redes" aria-label="Redes sociales">${redes}</div>`:""}
+  </div></header>
+  <div class="barra-nav"><div class="contenedor barra-nav-in">
     <button class="menu-btn" data-accion="menu" aria-expanded="false" aria-controls="nav">Menú</button>
     <nav id="nav" aria-label="Principal">
       ${link("", "Inicio", "inicio")}
@@ -609,9 +649,13 @@ function shell(main, r){
         ? `${link("cuenta","Mi portal","cuenta")}<button data-accion="salir">Salir</button>`
         : `<a class="entrar" href="#/entrar">Portal del socio</a>`}
     </nav>
-  </div></header>
+  </div></div>
   <main id="main">${main}</main>
-  <footer><div class="contenedor pie"><span class="logo" aria-hidden="true"></span><span>© ${new Date().getFullYear()} Asociación ${esc(a.nombre)}${a.email?` · <a href="mailto:${esc(a.email)}">${esc(a.email)}</a>`:""}</span></div></footer>`;
+  <footer class="pie-sitio"><div class="contenedor pie3">
+    ${contactoPie()}
+    <div class="pie-centro"><span class="logo" aria-hidden="true"></span><span>© ${new Date().getFullYear()} Asociación ${esc(a.nombre)}</span></div>
+    <div class="pie-der" aria-hidden="true"></div>
+  </div></footer>`;
 }
 function vacio(t, p){ return `<div class="vacio"><h3>${esc(t)}</h3><p class="suave">${esc(p||"")}</p></div>`; }
 
@@ -726,21 +770,12 @@ function ticket(a){
 function bandaRedes(){
   const a = S.ajustes;
   const redes = REDES.map(([k,t])=>[k,t,safeUrl(a.redes[k])]).filter(([,,u])=>u);
-  const hayContacto = a.email||a.telefono||a.whatsappContacto||a.direccion;
-  const wa = String(a.whatsappContacto||"").replace(/\D/g,"");
-  const waVisible = wa.length===9 ? wa.replace(/(\d{3})(\d{2})(\d{2})(\d{2})/,"$1 $2 $3 $4") : (a.whatsappContacto||"");
   return `<section class="banda"><div class="contenedor banda-grid">
     <div><h2>Síguenos</h2>
       ${redes.length?`<ul class="redes">${redes.map(([k,t,u])=>`<li><a href="${esc(u)}" target="_blank" rel="noopener">${ICONOS_REDES[k]||""}<span>${t}</span></a></li>`).join("")}</ul>`
         :`<p style="margin-top:20px">Los enlaces a nuestras redes aparecerán aquí.</p>`}
     </div>
-    <div class="contacto"><span class="logo-banda" role="img" aria-label="Logotipo de la asociación ${esc(a.nombre)}"></span><h3>Contacto</h3>
-      ${hayContacto?"":"<p>Los datos de contacto aparecerán aquí.</p>"}
-      ${a.email?`<p>Correo electrónico: <a href="mailto:${esc(a.email)}">${esc(a.email)}</a></p>`:""}
-      ${a.telefono?`<p>${esc(a.telefono)}</p>`:""}
-      ${wa?`<p>WhatsApp: <a href="https://wa.me/${wa.length===9?"34"+wa:wa}" target="_blank" rel="noopener">${esc(waVisible)}</a></p>`:""}
-      ${a.direccion?`<p>${esc(a.direccion)}</p>`:""}
-    </div></div></section>`;
+    <div class="banda-logo"><span class="logo-banda" role="img" aria-label="Logotipo de la asociación ${esc(a.nombre)}"></span></div></div></section>`;
 }
 
 /* ============================================================
