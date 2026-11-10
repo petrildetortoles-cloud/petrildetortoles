@@ -308,6 +308,31 @@ nav .entrar:hover{background:var(--rojo-hover);color:var(--sobre-rojo)}
 .cartel-hero{display:block;position:relative;width:fit-content;max-width:100%;margin:0 auto;transform:rotate(-2deg);border:2px solid var(--tinta);box-shadow:10px 10px 0 var(--sol)}
 .cartel-hero img{display:block;max-width:100%;max-height:560px;width:auto;height:auto}
 
+/* Galería de fotos, vídeos y visor */
+.galeria{display:grid;gap:8px;margin:14px 0;max-width:900px}
+.galeria.g1{grid-template-columns:1fr}
+.galeria.g2{grid-template-columns:1fr 1fr}
+.galeria.g3{grid-template-columns:repeat(3,1fr)}
+.foto-g{display:block;padding:0;border:0;background:none;cursor:zoom-in}
+.foto-g img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--marca-claro)}
+.galeria.g1 .foto-g img{aspect-ratio:auto;max-height:460px;object-fit:contain}
+@media(max-width:560px){.galeria.g3{grid-template-columns:1fr 1fr}}
+.video{position:relative;aspect-ratio:16/9;margin:16px 0;max-width:820px;background:#000}
+.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.visor{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:56px 16px;background:rgba(0,0,0,.9)}
+.visor img{max-width:100%;max-height:100%;object-fit:contain}
+.visor button{position:absolute;width:48px;height:48px;border:0;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;font-size:1.8rem;line-height:1;cursor:pointer}
+.visor-cerrar{top:12px;right:12px}
+.visor-ant{left:12px;top:calc(50% - 24px)}
+.visor-sig{right:12px;top:calc(50% - 24px)}
+.mini-fotos{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px}
+.mini-foto{display:grid;gap:4px;font-size:.85rem;font-weight:400}
+.mini-foto img{width:104px;height:78px;object-fit:cover;border:1px solid var(--linea)}
+/* Aviso de renovación */
+.aviso-renov{margin:24px 0 8px;padding:20px 22px;border:2px solid var(--sol);border-radius:10px}
+.aviso-renov h3{margin-bottom:10px}
+.aviso-renov .campo{margin:14px 0}
+
 /* Excel: exportar e importar */
 .excel-caja{margin:36px 0 8px;padding:22px 0;border-top:2px solid var(--tinta);border-bottom:1px solid var(--linea)}
 .excel-caja h3{margin-bottom:12px}
@@ -1196,7 +1221,7 @@ async function vistaSobre(){
   const d = await cargarSobre();
   return `<section class="contenedor pagina"><h1 class="h-pag">${esc(d.titulo||"Sobre nosotros")}</h1>
     ${d.texto
-      ? `<div class="historia">${d.imagen?`<img class="historia-img" src="${esc(d.imagen)}" alt="" loading="lazy">`:""}${textoAHtml(d.texto)}</div>`
+      ? `<div class="historia">${galeriaHTML(fotosDe(d))}${textoAHtml(d.texto)}${videosHTML(d.videos)}</div>`
       : vacio("Todavía no se ha publicado esta página","La junta puede escribir aquí la historia de la asociación.")}</section>`;
 }
 async function vistaProyectos(){
@@ -1209,12 +1234,12 @@ const CATEGORIAS = ["General","Actividades","Lotería","Aviso"];
 function noticiaHTML(n, compacta){
   const f = n.creado?.toDate?.(), url = safeUrl(n.enlace);
   const fecha = f ? f.toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"}) : "";
-  const chips = `<span class="chip ${n.categoria==="Lotería"?"sol":""}">${esc(n.categoria||"General")}</span>${n.fijada?'<span class="chip pend">Fijada</span>':""}`;
+  const chips = `<span class="chip ${n.categoria==="Lotería"?"sol":""}">${esc(n.categoria||"General")}</span>${n.fijada?'<span class="chip pend">Fijada</span>':""}${(n.videos||[]).length?'<span class="chip">Con vídeo</span>':""}`;
   if(compacta){
     const t = n.texto||"";
-    return `<article class="noticia-c">${n.imagen?`<img class="n-img-c" src="${esc(n.imagen)}" alt="" loading="lazy">`:""}<p class="n-cab">${chips}</p><h3>${esc(n.titulo)}</h3><p>${esc(t.length>150?t.slice(0,150).trim()+"…":t)}</p><a href="#/noticias">Leer más</a></article>`;
+    return `<article class="noticia-c">${fotosDe(n)[0]?`<img class="n-img-c" src="${esc(fotosDe(n)[0])}" alt="" loading="lazy">`:""}<p class="n-cab">${chips}</p><h3>${esc(n.titulo)}</h3><p>${esc(t.length>150?t.slice(0,150).trim()+"…":t)}</p><a href="#/noticias">Leer más</a></article>`;
   }
-  return `<article class="noticia"><p class="n-cab">${chips}<span class="meta">${fecha}</span></p><h3>${esc(n.titulo)}</h3>${n.imagen?`<img class="n-img" src="${esc(n.imagen)}" alt="" loading="lazy">`:""}<p class="n-texto">${esc(n.texto)}</p>${url?`<p><a href="${esc(url)}" target="_blank" rel="noopener">Más información</a></p>`:""}</article>`;
+  return `<article class="noticia"><p class="n-cab">${chips}<span class="meta">${fecha}</span></p><h3>${esc(n.titulo)}</h3>${galeriaHTML(fotosDe(n), n.titulo)}<p class="n-texto">${esc(n.texto)}</p>${videosHTML(n.videos)}${url?`<p><a href="${esc(url)}" target="_blank" rel="noopener">Más información</a></p>`:""}</article>`;
 }
 async function vistaNoticias(){
   const l = ordenNoticias(await leerNoticias());
@@ -1313,7 +1338,7 @@ function camposPago(p){
     ? `<select name="receptor" aria-label="Miembro de la junta"><option value="">Elige el miembro de la junta</option>${junta.map(n=>`<option ${efectivo&&p.pagadoA===n?"selected":""}>${esc(n)}</option>`).join("")}</select>`
     : `<input name="receptor" maxlength="80" placeholder="Nombre del miembro de la junta" value="${efectivo?esc(p.pagadoA||""):""}" aria-label="Miembro de la junta">`;
   return `<fieldset class="pago"><legend>Pago de la cuota anual${importe?` (${importe})`:""}</legend>
-    <p class="suave" style="margin:0">${p?"":`Cuota anual: ${tramosTexto()} (cuenta la edad que se cumple dentro del año en curso). `}Tu alta se activa cuando la junta comprueba el pago. Elige cómo vas a pagar. <strong id="cuota-aplicable"></strong></p>
+    <p class="suave" style="margin:0">${p?"":`Cuota anual: ${tramosTexto()} (cuenta la edad que se cumple dentro del año en curso). `}${p?.estado==="aprobado" ? "Elige cómo pagarás la cuota en las renovaciones." : "Tu alta se activa cuando la junta comprueba el pago. Elige cómo vas a pagar."} <strong id="cuota-aplicable"></strong></p>
     <div class="pago-op"><label class="opcion"><input type="radio" name="formaPago" value="ingreso" ${efectivo||dom?"":"checked"}><span>Ingreso o transferencia a la cuenta de la asociación</span></label>
       <div class="detalle">${iban
         ? `<p class="iban">${esc(iban)}</p>${S.ajustes.titularCuenta?`<p class="suave">Titular: ${esc(S.ajustes.titularCuenta)}</p>`:""}<p>Concepto: <strong>${esc(concepto)}</strong>. También puedes programarlo en tu banco como pago periódico.</p><p><button type="button" class="btn peq sec" data-accion="copiarIban">Copiar IBAN</button></p>`
@@ -1425,7 +1450,7 @@ async function vistaCuenta(){
           <div class="campo"><label>Correo</label><input value="${esc(p.email||S.user.email)}" disabled></div>
           <div><button class="btn" type="submit">Guardar cambios</button></div>
         </form>
-        ${p.estado==="pendiente"?`<h2 style="font-size:1.8rem;margin-top:56px">Forma de pago</h2>
+        ${(p.estado==="pendiente"||p.estado==="aprobado")?`<h2 style="font-size:1.8rem;margin-top:56px">Forma de pago</h2>
         <form class="formu" data-form="pago">${camposPago(p)}<div><button class="btn" type="submit">Guardar forma de pago</button></div></form>`:""}
         <h2 style="font-size:1.8rem;margin-top:56px">Mi unidad familiar</h2>
         ${familia}</div>
@@ -1506,7 +1531,7 @@ async function vistaAdmin(){
     <div class="pestanas">${PESTANAS.map(([k,t])=>`<button class="pest" data-accion="pestana" data-id="${k}" ${tab===k?'aria-current="true"':""}>${t}${k==="socios"&&pend?` (${pend})`:""}</button>`).join("")}</div>
     ${cuerpo}</section>`;
 }
-const pagoHTML = x => x.formaPago ? `<br><span class="suave">Pago del alta: ${x.formaPago==="efectivo" ? `en metálico, entregado a ${esc(x.pagadoA||"—")}` : (x.formaPago==="domiciliacion" ? "domiciliación (la cuenta está en sus datos personales)" : "ingreso o transferencia (compruébalo en el banco)")}</span>` : "";
+const pagoHTML = x => x.formaPago ? `<br><span class="suave">Forma de pago: ${x.formaPago==="efectivo" ? `en metálico, entregado a ${esc(x.pagadoA||"—")}` : (x.formaPago==="domiciliacion" ? "domiciliación (la cuenta está en sus datos personales)" : "ingreso o transferencia (compruébalo en el banco)")}</span>` : "";
 const privadoHTML = x => {
   const d = S.adm.privado[x.id]; if(!d) return "";
   const f = (k,v) => `<li>${k}: <strong>${v}</strong></li>`;
@@ -1515,6 +1540,11 @@ const privadoHTML = x => {
     <details class="mini"><summary>Editar estos datos</summary>
       <form data-form="privadoAdmin" data-id="${x.id}" style="display:grid;gap:8px"><label>DNI o NIE <input name="dni" value="${esc(d.dni||"")}" maxlength="12"></label><label>Lugar de residencia <input name="residencia" value="${esc(d.residencia||"")}" maxlength="120"></label><label>Cuenta para domiciliar (IBAN) <input name="iban" value="${esc(d.ibanDomiciliacion?ibanBonito(d.ibanDomiciliacion):"")}"></label><button class="btn peq" type="submit">Guardar</button></form></details></div>`;
 };
+const editorPagoHTML = x => `<details class="mini"><summary>Cambiar forma de pago</summary><form data-form="pagoAdmin" data-id="${x.id}" style="display:grid;gap:8px">
+    <label>Forma de pago <select name="formaPago">${[["ingreso","Ingreso o transferencia"],["efectivo","En metálico"],["domiciliacion","Domiciliación"]].map(([v,t])=>`<option value="${v}" ${(x.formaPago||"ingreso")===v?"selected":""}>${t}</option>`).join("")}</select></label>
+    <label>Si es en metálico, quién lo recibe <input name="receptor" list="lista-junta-cobro" value="${esc(x.pagadoA||"")}"></label>
+    <label>Si es domiciliación, cuenta (IBAN) <input name="iban" placeholder="Vacío: se mantiene la que tiene"></label>
+    <button class="btn peq" type="submit">Guardar</button></form></details>`;
 const nacimientoHTML = x => {
   const n = cuotaNumero(x.nacimiento);
   const txt = x.nacimiento ? `Nacido el ${fechaCorta(x.nacimiento)} (${edad(x.nacimiento)} años${edadAnio(x.nacimiento)<18?", menor de edad":""})` : "Sin fecha de nacimiento";
@@ -1565,9 +1595,11 @@ function admSocios(){
     b.push(`<button class="btn peq sec" data-accion="datosPersonales" data-id="${x.id}">${S.adm.privado[x.id]?"Ocultar datos personales":"Datos personales"}</button>`);
     return b.join("");
   };
-  const fila = x => `<li data-texto="${esc(`${x.numero||""} ${nombre(x)} ${x.movil||""} ${x.email||""}${x.estado==="aprobado"&&!cuotaAlDia(x)?` cuota pendiente ${x.cuotaAnio?"pendiente de renovar":"sin pagar"}`:""}${x.estado==="pendiente"&&x.pagoNoRecibido?" pago no recibido":""}${x.rol==="admin"?" administrador":""}${x.estado==="pendiente"?" pendiente de aprobación":""}`.toLowerCase())}"><div class="cuerpo"><strong>${x.numero?`Nº ${x.numero}, `:""}${esc(nombre(x))}</strong> ${chipEstado(x)} ${x.estado==="aprobado"?cuotaChip(x):""}${x.estado==="pendiente"&&x.pagoNoRecibido?'<span class="chip no">Pago no recibido</span>':""} ${x.rol==="admin"?'<span class="chip">Administrador</span>':""} ${x.uid?"":'<span class="chip">Sin cuenta</span>'}<br><span class="suave">Móvil ${esc(x.movil||"—")}${x.email?`, ${esc(x.email)}`:""}</span>${nacimientoHTML(x)}${pagoHTML(x)}${socioDesdeHTML(x)}${x.titularId?`<br><span class="suave">En la unidad familiar de ${esc(etiq(mapa[x.titularId]))}</span>`:""}${(deps[x.id]||[]).length?`<br><span class="suave">Unidad familiar: ${deps[x.id].map(d=>esc(etiq(d))).join(", ")}</span>`:""}</div><div class="btns">${botones(x)}</div>${privadoHTML(x)}</li>`;
+  const fila = x => `<li data-texto="${esc(`${x.numero||""} ${nombre(x)} ${x.movil||""} ${x.email||""}${x.estado==="aprobado"&&!cuotaAlDia(x)?` cuota pendiente ${x.cuotaAnio?"pendiente de renovar":"sin pagar"}`:""}${x.estado==="pendiente"&&x.pagoNoRecibido?" pago no recibido":""}${x.rol==="admin"?" administrador":""}${x.estado==="pendiente"?" pendiente de aprobación":""}`.toLowerCase())}"><div class="cuerpo"><strong>${x.numero?`Nº ${x.numero}, `:""}${esc(nombre(x))}</strong> ${chipEstado(x)} ${x.estado==="aprobado"?cuotaChip(x):""}${x.estado==="pendiente"&&x.pagoNoRecibido?'<span class="chip no">Pago no recibido</span>':""} ${x.rol==="admin"?'<span class="chip">Administrador</span>':""} ${x.uid?"":'<span class="chip">Sin cuenta</span>'}<br><span class="suave">Móvil ${esc(x.movil||"—")}${x.email?`, ${esc(x.email)}`:""}</span>${nacimientoHTML(x)}${pagoHTML(x)}${editorPagoHTML(x)}${socioDesdeHTML(x)}${x.titularId?`<br><span class="suave">En la unidad familiar de ${esc(etiq(mapa[x.titularId]))}</span>`:""}${(deps[x.id]||[]).length?`<br><span class="suave">Unidad familiar: ${deps[x.id].map(d=>esc(etiq(d))).join(", ")}</span>`:""}</div><div class="btns">${botones(x)}</div>${privadoHTML(x)}</li>`;
   return `<div class="panel-adm"><h2>Socios</h2>
     <p class="suave" style="margin-top:8px;max-width:70ch">Los administradores gestionan toda la web. Para dar permisos a un socio, debe tener cuenta y el alta aprobada: pulsa «Hacer administrador» en su ficha. Puedes quitárselos cuando quieras.</p>
+    <datalist id="lista-junta-cobro">${listaJunta().map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
+    ${avisoRenovacionHTML()}
     <div class="adm-grid" style="margin-top:12px">
       <form class="formu" data-form="socioJunta"><h3>Añadir socio</h3>
         <div class="fila-campos">
@@ -1659,7 +1691,8 @@ function admNoticias(){
         <div class="campo"><label for="categoria">Categoría</label><select id="categoria" name="categoria">${CATEGORIAS.map(c=>`<option ${(ed.categoria||"General")===c?"selected":""}>${c}</option>`).join("")}</select></div>
         <div class="campo"><label for="texto">Texto</label><textarea id="texto" name="texto" required style="min-height:170px">${esc(ed.texto||"")}</textarea></div>
         <div class="campo"><label for="enlace">Enlace para más información (opcional)</label><input id="enlace" name="enlace" value="${esc(ed.enlace||"")}"></div>
-        ${campoImagen(ed)}
+        ${campoFotos(ed)}
+        ${campoVideos(ed)}
         <label class="chk"><input type="checkbox" name="fijada" ${ed.fijada?"checked":""}> Fijar arriba del todo</label>
         
         <div class="acciones" style="margin:0"><button class="btn" type="submit">${ed.id?"Guardar cambios":"Publicar noticia"}</button>${ed.id?`<button type="button" class="btn sec" data-accion="cancelar">Cancelar</button>`:""}</div>
@@ -1760,7 +1793,8 @@ function admSobre(){
       <div class="campo"><label for="sb-titulo">Título de la página</label><input id="sb-titulo" name="titulo" maxlength="80" placeholder="Sobre nosotros" value="${esc(d.titulo||"")}"></div>
       <div class="campo"><label for="sb-texto">Texto</label><textarea id="sb-texto" name="texto" style="min-height:340px" placeholder="Cómo nació la asociación, quiénes la fundaron, qué hacéis...">${esc(d.texto||"")}</textarea>
         <small>Deja una línea en blanco para separar párrafos. Para poner un subtítulo, escribe una línea que empiece por ## (por ejemplo: ## Los inicios).</small></div>
-      ${campoImagen(d,"Foto o imagen (opcional)")}
+      ${campoFotos(d,"Fotos (opcional)")}
+      ${campoVideos(d)}
       <div><button class="btn" type="submit">Guardar la página</button></div>
     </form></div>`;
 }
@@ -1925,6 +1959,33 @@ const ACCIONES = {
     }
     S.adm.imp = null; S.adm.impResultado = {creados, fallos}; toast(`Importados ${creados} socios`); refrescar();
   },
+  verFoto(_, el){
+    const imgs = [...el.closest(".galeria").querySelectorAll("img")].map(i=>i.src); let i = imgs.indexOf(el.querySelector("img").src);
+    const v = document.createElement("div"); v.className = "visor"; v.setAttribute("role","dialog"); v.setAttribute("aria-label","Foto ampliada");
+    const pintar = () => { v.innerHTML = `<img src="${esc(imgs[i])}" alt=""><button class="visor-cerrar" aria-label="Cerrar">×</button>${imgs.length>1?`<button class="visor-ant" aria-label="Foto anterior">‹</button><button class="visor-sig" aria-label="Foto siguiente">›</button>`:""}`; };
+    const mover = d => { i = (i+d+imgs.length)%imgs.length; pintar(); };
+    const cerrar = () => { v.remove(); document.removeEventListener("keydown", tecla); };
+    const tecla = e => { if(e.key==="Escape") cerrar(); else if(e.key==="ArrowRight" && imgs.length>1) mover(1); else if(e.key==="ArrowLeft" && imgs.length>1) mover(-1); };
+    v.addEventListener("click", e => { if(e.target.closest(".visor-sig")) mover(1); else if(e.target.closest(".visor-ant")) mover(-1); else cerrar(); });
+    pintar(); document.addEventListener("keydown", tecla); document.body.appendChild(v);
+  },
+  verAviso(){ S.adm.verAviso = true; refrescar(); },
+  async enviarWhatsapp(id){
+    const g = avisoGrupos().find(x=>x.contacto.id===id); if(!g || !g.contacto.movil) return;
+    window.open(`https://wa.me/34${g.contacto.movil}?text=${encodeURIComponent(textoWhatsapp(S.adm.textoAviso ?? textoAvisoBase(), g))}`, "_blank", "noopener");
+    await marcarAvisados([g]); refrescar();
+  },
+  async enviarCorreoAviso(){
+    const grupos = avisoGrupos().filter(g=>g.contacto.email), correos = [...new Set(grupos.map(g=>g.contacto.email))];
+    if(!correos.length) return toast("Ninguno tiene correo","error");
+    const a = document.createElement("a");
+    a.href = `mailto:${encodeURIComponent(S.ajustes.email||"")}?bcc=${encodeURIComponent(correos.join(","))}&subject=${encodeURIComponent(`Renovación de la cuota de socio ${ANIO+1}`)}&body=${encodeURIComponent(S.adm.textoAviso ?? textoAvisoBase())}`;
+    document.body.appendChild(a); a.click(); a.remove();
+    await marcarAvisados(grupos); refrescar();
+  },
+  async copiarCorreos(){ await copiarTexto([...new Set(avisoGrupos().map(g=>g.contacto.email).filter(Boolean))].join(", "), "Correos copiados"); },
+  async copiarTextoAviso(){ await copiarTexto(S.adm.textoAviso ?? textoAvisoBase(), "Texto copiado"); },
+  async copiarMoviles(){ await copiarTexto([...new Set(avisoGrupos().map(g=>g.contacto.movil).filter(Boolean))].map(m=>"+34"+m).join(", "), "Móviles copiados"); },
   async noPagada(id){
     const x = S.adm.datos.socios.find(z=>z.id===id), nom = x ? `${x.nombre} ${x.apellidos}` : "esta persona";
     if(!confirm(`¿Marcar la cuota de ${ANIO} de ${nom} como no pagada?`)) return;
@@ -2035,6 +2096,119 @@ function archivoADataURL(file, max=900, q=.78){
     img.src=url;
   });
 }
+/* ---------- Varias fotos y vídeos (noticias y Sobre nosotros) ---------- */
+const MAX_FOTOS = 6;
+const fotosDe = x => Array.isArray(x?.imagenes) && x.imagenes.length ? x.imagenes : (x?.imagen ? [x.imagen] : []);
+function campoFotos(ed, etiqueta="Fotos (opcional)"){
+  const fotos = fotosDe(ed);
+  return `<div class="campo"><label for="fotosArchivo">${etiqueta}</label>
+    ${fotos.length ? `<div class="mini-fotos">${fotos.map((f,i)=>`<label class="mini-foto"><img src="${esc(f)}" alt="Foto ${i+1}"><span><input type="checkbox" name="quitarFoto" value="${i}"> Quitar</span></label>`).join("")}</div>` : ""}
+    <input id="fotosArchivo" name="fotos" type="file" accept="image/*" multiple>
+    <small>Puedes elegir varias a la vez, hasta ${MAX_FOTOS} en total. Se reducen automáticamente.</small></div>`;
+}
+function campoVideos(ed){
+  return `<div class="campo"><label for="videos">Vídeos (opcional)</label><textarea id="videos" name="videos" style="min-height:80px" placeholder="https://www.youtube.com/watch?v=...">${esc((ed.videos||[]).join("\n"))}</textarea>
+    <small>Pega los enlaces, uno por línea. Valen vídeos de YouTube, Vimeo o Google Drive (compartidos con «cualquier persona con el enlace»).</small></div>`;
+}
+async function fotosDeFormulario(fd, previas){
+  const quitar = new Set(fd.getAll("quitarFoto").map(Number));
+  const fotos = previas.filter((_,i)=>!quitar.has(i));
+  const nuevas = fd.getAll("fotos").filter(f=>f && f.size);
+  if(fotos.length + nuevas.length > MAX_FOTOS) throw new Error(`Como máximo ${MAX_FOTOS} fotos. Quita alguna o elige menos.`);
+  for(const f of nuevas) fotos.push(await archivoADataURL(f, 1000, .72));
+  if(fotos.reduce((t,f)=>t+f.length,0) > 880000) throw new Error("Las fotos ocupan demasiado para guardarlas juntas. Quita alguna o usa fotos más pequeñas.");
+  return fotos;
+}
+function videoEmbed(url){
+  const u = String(url||"").trim(); let m;
+  if((m = /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([\w-]{6,})/.exec(u))) return `https://www.youtube-nocookie.com/embed/${m[1]}`;
+  if((m = /vimeo\.com\/(?:video\/)?(\d+)/.exec(u))) return `https://player.vimeo.com/video/${m[1]}`;
+  if((m = /drive\.google\.com\/(?:file\/d\/|open\?id=)([\w-]+)/.exec(u))) return `https://drive.google.com/file/d/${m[1]}/preview`;
+  return "";
+}
+function videosDeFormulario(fd){
+  const lineas = String(fd.get("videos")||"").split("\n").map(t=>t.trim()).filter(Boolean);
+  const malo = lineas.find(l=>!videoEmbed(l));
+  if(malo) throw new Error(`Este enlace no es un vídeo de YouTube, Vimeo ni Google Drive: ${malo}`);
+  if(lineas.length>10) throw new Error("Como máximo 10 vídeos.");
+  return lineas;
+}
+function galeriaHTML(fotos, alt=""){
+  if(!fotos.length) return "";
+  return `<div class="galeria g${Math.min(fotos.length,3)}">${fotos.map((f,i)=>`<button type="button" class="foto-g" data-accion="verFoto" aria-label="Ampliar la foto ${i+1}"><img src="${esc(f)}" alt="${esc(alt)}" loading="lazy"></button>`).join("")}</div>`;
+}
+function videosHTML(videos){
+  return (videos||[]).map(videoEmbed).filter(Boolean).map(src=>`<div class="video"><iframe src="${esc(src)}" title="Vídeo" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>`).join("");
+}
+
+/* ---------- Aviso de renovación de la cuota (aparece en diciembre) ---------- */
+function cuotaSiguiente(x){
+  const a = S.ajustes, sig = new Date().getFullYear()+1;
+  if(!x.nacimiento) return numCuota(a.cuotaAdulto);
+  const e = sig - Number(String(x.nacimiento).slice(0,4));
+  return numCuota(e<12 ? a.cuotaInfantil : (e<18 ? a.cuotaJoven : a.cuotaAdulto));
+}
+/* Socios activos que tendrán que pagar el año que viene y no tienen la cuota domiciliada.
+   Se agrupan por la persona de contacto (el titular de su unidad familiar, si lo tienen). */
+function avisoGrupos(){
+  const socios = S.adm.datos.socios, mapa = Object.fromEntries(socios.map(x=>[x.id,x])), grupos = new Map();
+  for(const x of socios){
+    if(x.estado!=="aprobado") continue;
+    const t = x.titularId && mapa[x.titularId] ? mapa[x.titularId] : x;
+    if(x.formaPago==="domiciliacion" || t.formaPago==="domiciliacion") continue;
+    const importe = cuotaSiguiente(x); if(!importe) continue;
+    if(!grupos.has(t.id)) grupos.set(t.id, {contacto:t, personas:[]});
+    grupos.get(t.id).personas.push({...x, importe});
+  }
+  return [...grupos.values()].sort((a,b)=>String(a.contacto.apellidos).localeCompare(String(b.contacto.apellidos),"es"));
+}
+function textoAvisoBase(){
+  const a = S.ajustes, sig = ANIO+1, iban = ibanBonito(a.iban);
+  return `Hola:
+
+Te recordamos que la cuota de socio de la Asociación ${a.nombre} caduca el 31 de diciembre de ${ANIO}. Para seguir siendo socio en ${sig} hay que renovarla: ${tramosTexto()}, según la edad que se cumpla en ${sig}.
+
+Puedes pagarla por ingreso o transferencia${iban?` en la cuenta ${iban}${a.titularCuenta?` (titular: ${a.titularCuenta})`:""}`:""}, indicando tu nombre y apellidos, o en metálico a un miembro de la junta. También puedes domiciliarla desde tu portal de socio.
+
+Muchas gracias,
+La junta de la Asociación ${a.nombre}`;
+}
+function textoWhatsapp(base, g){
+  const nombres = g.personas.map(p=>p.nombre).join(", ").replace(/, ([^,]*)$/," y $1");
+  const detalle = g.personas.map(p=>`${p.nombre} ${p.apellidos}: ${eur(p.importe)}`).join("; ");
+  return `Hola, ${nombres}.\n\n${base.replace(/^Hola:?\s*/,"")}\n\nCuota de ${ANIO+1}: ${detalle}.`;
+}
+function avisoRenovacionHTML(){
+  const diciembre = new Date().getMonth()===11;
+  if(!diciembre && !S.adm.verAviso) return `<p style="margin-top:20px"><button class="btn peq sec" data-accion="verAviso">Preparar el aviso de renovación de la cuota</button> <span class="suave">Aparece solo en diciembre, un mes antes de que caduque la cuota.</span></p>`;
+  const grupos = avisoGrupos(), base = S.adm.textoAviso ?? textoAvisoBase(), sig = ANIO+1;
+  const personas = grupos.reduce((t,g)=>t+g.personas.length,0);
+  const correos = [...new Set(grupos.map(g=>g.contacto.email).filter(Boolean))];
+  const filas = grupos.map(g=>{
+    const c = g.contacto;
+    const avisado = c.avisoRenovacion===sig;
+    return `<li><div class="cuerpo"><strong>${esc(`${c.nombre} ${c.apellidos}`)}</strong>${avisado?' <span class="chip ok">Avisado</span>':""}<br><span class="suave">${g.personas.map(p=>`${esc(p.nombre)} (${eur(p.importe)})`).join(", ")}${c.email?`, ${esc(c.email)}`:", sin correo"}${c.movil?"":", sin móvil"}</span></div>
+      <div class="btns">${c.movil?`<button class="btn peq" data-accion="enviarWhatsapp" data-id="${c.id}">Enviar WhatsApp</button>`:""}</div></li>`;
+  }).join("");
+  return `<div class="aviso-renov"><h3>Aviso de renovación de la cuota ${sig}</h3>
+    ${grupos.length ? `<p>La cuota de ${ANIO} caduca el 31 de diciembre. <strong>${personas}</strong> ${personas===1?"socio tiene":"socios tienen"} que renovarla y no la ${personas===1?"tiene":"tienen"} domiciliada (${grupos.length} ${grupos.length===1?"aviso":"avisos"}, porque cada unidad familiar recibe uno a nombre de su titular). No se incluyen los que tienen la cuota domiciliada ni los menores de 12 años, que no pagan.</p>
+      <div class="campo"><label for="aviso-texto">Texto del aviso</label><textarea id="aviso-texto" data-aviso style="min-height:220px">${esc(base)}</textarea><small>Puedes cambiarlo. En los WhatsApp se añade al principio el nombre de cada persona y al final lo que le toca pagar.</small></div>
+      <div class="btns"><button class="btn" data-accion="enviarCorreoAviso" ${correos.length?"":"disabled"}>Abrir un correo a todos (${correos.length}, en copia oculta)</button><button class="btn sec" data-accion="copiarCorreos">Copiar los correos</button><button class="btn sec" data-accion="copiarTextoAviso">Copiar el texto</button><button class="btn sec" data-accion="copiarMoviles">Copiar los móviles</button></div>
+      <p class="meta">Si el correo no se abre con todos, usa «Copiar los correos» y pégalos en el campo CCO de tu correo. Los WhatsApp se envían de uno en uno con el botón de cada persona.</p>
+      <ul class="lista-adm">${filas}</ul>`
+      : `<p>Todos los socios activos tienen la cuota domiciliada o no tienen que pagarla. No hay que enviar ningún aviso.</p>`}
+  </div>`;
+}
+
+async function copiarTexto(texto, ok){
+  try{ await navigator.clipboard.writeText(texto); toast(ok); }
+  catch{ toast("No se ha podido copiar automáticamente. Selecciona el texto y cópialo a mano.","error"); }
+}
+async function marcarAvisados(grupos){
+  const sig = ANIO+1;
+  for(const g of grupos) for(const id of new Set([g.contacto.id, ...g.personas.map(p=>p.id)])) await updateDoc(doc(db,"socios",id),{avisoRenovacion:sig});
+}
+
 const precio = v => { const n = parseFloat(String(v).replace(",",".")); return Number.isFinite(n) && n>=0 ? n : null; };
 async function imagenDeFormulario(fd, previo, max=900){
   if(fd.get("quitarImagen")==="on") return "";
@@ -2120,7 +2294,7 @@ const FORMS = {
   },
   async sobre(f,fd){
     const previo = S.adm.datos.sobre || {};
-    const datos = {titulo:fd.get("titulo").trim(), texto:fd.get("texto").trim(), imagen:await imagenDeFormulario(fd, previo.imagen, 1200), actualizado:serverTimestamp(), editadoPor:`${S.perfil.nombre} ${S.perfil.apellidos}`.trim()};
+    const datos = {titulo:fd.get("titulo").trim(), texto:fd.get("texto").trim(), videos:videosDeFormulario(fd), imagenes:await fotosDeFormulario(fd, fotosDe(previo)), imagen:"", actualizado:serverTimestamp(), editadoPor:`${S.perfil.nombre} ${S.perfil.apellidos}`.trim()};
     await setDoc(doc(db,"config","sobre"),datos);
     toast("Página guardada"); refrescar();
   },
@@ -2138,6 +2312,28 @@ const FORMS = {
     toast("Revisando el archivo…");
     const filas = await prepararImportacion(archivo, {cuota:fd.get("cuota")});
     S.adm.imp = {filas, nombre:archivo.name}; S.adm.impResultado = null; refrescar();
+  },
+  async pagoAdmin(f,fd){
+    const id = f.dataset.id, forma = fd.get("formaPago"), datos = {formaPago:forma, pagadoA:null};
+    let iban = null;
+    if(forma==="efectivo"){
+      const r = String(fd.get("receptor")||"").trim();
+      if(!r) return toast("Indica qué miembro de la junta recibe el pago","error");
+      datos.pagadoA = r.slice(0,80);
+    }
+    if(forma==="domiciliacion"){
+      const t = String(fd.get("iban")||"").trim();
+      if(t){ iban = ibanValido(t); if(!iban) return toast("El IBAN no es válido","error"); }
+      else {
+        const sn = await getDoc(doc(db,"socios",id,"privado","datos"));
+        iban = sn.exists() ? (sn.data().ibanDomiciliacion||null) : null;
+        if(!iban) return toast("Para domiciliar hace falta la cuenta (IBAN)","error");
+      }
+    }
+    await updateDoc(doc(db,"socios",id), datos);
+    await setDoc(doc(db,"socios",id,"privado","datos"), {ibanDomiciliacion:iban}, {merge:true});
+    if(S.adm.privado[id]){ const sn = await getDoc(doc(db,"socios",id,"privado","datos")); S.adm.privado[id] = sn.exists() ? sn.data() : {}; }
+    toast("Forma de pago guardada"); refrescar();
   },
   async privadoAdmin(f,fd){
     const id = f.dataset.id, datos = {};
@@ -2206,7 +2402,7 @@ const FORMS = {
   },
   async noticia(f,fd){
     const id = fd.get("id");
-    const datos = {titulo:fd.get("titulo").trim(), categoria:fd.get("categoria"), texto:fd.get("texto").trim(), enlace:fd.get("enlace").trim(), fijada:fd.get("fijada")==="on", imagen:await imagenDeFormulario(fd, S.adm.datos.noticias.find(x=>x.id===id)?.imagen)};
+    const datos = {titulo:fd.get("titulo").trim(), categoria:fd.get("categoria"), texto:fd.get("texto").trim(), enlace:fd.get("enlace").trim(), fijada:fd.get("fijada")==="on", videos:videosDeFormulario(fd), imagenes:await fotosDeFormulario(fd, fotosDe(S.adm.datos.noticias.find(x=>x.id===id))), imagen:""};
     if(id) await updateDoc(doc(db,"noticias",id),datos);
     else await addDoc(collection(db,"noticias"),{...datos, creado:serverTimestamp()});
     S.adm.edit=null; toast(id?"Cambios guardados":"Noticia publicada"); refrescar();
@@ -2231,6 +2427,7 @@ document.addEventListener("click", async e=>{
   catch(err){ console.error(err); toast(errMsg(err),"error"); }
 });
 document.addEventListener("input", e=>{
+  if(e.target.matches && e.target.matches("[data-aviso]")){ S.adm.textoAviso = e.target.value; return; }
   const c = e.target.closest('[data-calc="cuota"]');
   if(c){
     const out = $("#cuota-aplicable");
