@@ -308,6 +308,30 @@ nav .entrar:hover{background:var(--rojo-hover);color:var(--sobre-rojo)}
 .cartel-hero{display:block;position:relative;width:fit-content;max-width:100%;margin:0 auto;transform:rotate(-2deg);border:2px solid var(--tinta);box-shadow:10px 10px 0 var(--sol)}
 .cartel-hero img{display:block;max-width:100%;max-height:560px;width:auto;height:auto}
 
+/* Tabla de socios (estilo hoja de cálculo) */
+.tabla-socios-scroll{overflow:auto;max-height:75vh;border:1px solid var(--linea);border-radius:8px;margin-top:8px;background:var(--papel)}
+.tabla-socios{border-collapse:separate;border-spacing:0;width:100%;font-size:.9rem}
+.tabla-socios th,.tabla-socios td{padding:7px 10px;border-bottom:1px solid var(--linea);border-right:1px solid var(--linea);text-align:left;vertical-align:middle;white-space:nowrap;background:var(--papel)}
+.tabla-socios thead th{position:sticky;top:0;z-index:3;background:var(--marca);color:#fff;padding:0;font-weight:600}
+.th-btn{display:block;width:100%;padding:9px 10px;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;white-space:nowrap}
+.th-btn:hover{background:rgba(255,255,255,.12)}
+.tabla-socios .c-numero{position:sticky;left:0;z-index:2;width:56px;min-width:56px;max-width:56px;box-sizing:border-box;text-align:right;font-variant-numeric:tabular-nums}
+.tabla-socios .c-apellidos{position:sticky;left:56px;z-index:2;font-weight:600;box-shadow:inset -2px 0 0 var(--linea)}
+.tabla-socios thead .c-numero,.tabla-socios thead .c-apellidos{z-index:4}
+.tabla-socios td.c-apellidos{max-width:240px;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:600px){.tabla-socios td.c-apellidos{max-width:120px}}
+.tabla-socios tbody tr.par td{background:color-mix(in srgb,var(--marca-claro) 45%,var(--papel))}
+.tabla-socios tbody tr.fila-socio.pendiente td{background:color-mix(in srgb,var(--sol) 16%,var(--papel))}
+.tabla-socios tbody tr.fila-socio.rechazado td{color:var(--suave)}
+.tabla-socios tbody tr.fila-socio:hover td{background:var(--marca-claro)}
+.tabla-socios .c-edad{text-align:right}
+.tabla-socios .celda-email{display:inline-block;max-width:220px;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+.tabla-socios .chip{font-size:.75rem}
+.tabla-socios tr.detalle-socio td{white-space:normal;background:var(--marca-claro);padding:0}
+.detalle-in{position:sticky;left:0;max-width:min(100%,calc(100vw - 72px));padding:14px 16px 16px}
+.tabla-socios tr[hidden]{display:none}
+html[data-modo="oscuro"] .tabla-socios thead th{color:var(--papel)}
+
 /* Galería de fotos, vídeos y visor */
 .galeria{display:grid;gap:8px;margin:14px 0;max-width:900px}
 .galeria.g1{grid-template-columns:1fr}
@@ -909,7 +933,7 @@ const DEMO_ON = !FIREBASE_CONFIG.apiKey;
 const S = {
   demo: DEMO_ON, user:null, perfil:null, ajustes:{...AJUSTES_POR_DEFECTO, redes:{...AJUSTES_POR_DEFECTO.redes}},
   tk:0, rutaPrev:"", registrando:false, apuntar:null, deps:[], priv:null,
-  adm:{ tab:"socios", edit:null, abierto:{}, recuentos:{}, datos:{}, externos:{}, privado:{} }
+  adm:{ tab:"socios", edit:null, abierto:{}, recuentos:{}, datos:{}, externos:{}, privado:{}, abiertoSocio:{}, ordenSocios:null, busqueda:"" }
 };
 let auth, db;
 if(!S.demo){
@@ -1572,7 +1596,17 @@ function campoImagen(ed, etiqueta="Imagen (opcional)"){
 function admSocios(){
   const todos = S.adm.datos.socios, mapa = Object.fromEntries(todos.map(x=>[x.id,x]));
   const orden = {pendiente:0,aprobado:1,rechazado:2};
-  const lista = [...todos].sort((a,b)=>(orden[a.estado]??3)-(orden[b.estado]??3) || (a.numero||1e9)-(b.numero||1e9) || String(a.apellidos).localeCompare(String(b.apellidos)));
+  const VALOR = {
+    numero: x => x.numero ?? Infinity, apellidos: x => xlNorm(x.apellidos), nombre: x => xlNorm(x.nombre),
+    edad: x => x.nacimiento ? edad(x.nacimiento) : Infinity, categoria: x => ({infantil:0, joven:1, adulto:2, sin:3})[categoriaDe(x)],
+    movil: x => x.movil || "~", email: x => String(x.email || "~").toLowerCase(), estado: x => orden[x.estado] ?? 3,
+    cuota: x => x.estado!=="aprobado" ? 4 : (cuotaGratis(x) ? 3 : (cuotaAlDia(x) ? 2 : (x.cuotaAnio ? 1 : 0))),
+    pago: x => x.formaPago || "~", familia: x => x.titularId ? xlNorm(mapa[x.titularId]?.apellidos) : (x.numDependientes ? " " : "~"), alta: x => fechaAlta(x) || "9999"
+  };
+  const os = S.adm.ordenSocios, cmp = (p,q) => p<q ? -1 : (p>q ? 1 : 0);
+  const lista = [...todos].sort(os
+    ? (a,b) => (os.asc ? 1 : -1) * cmp(VALOR[os.col](a), VALOR[os.col](b)) || cmp(VALOR.apellidos(a), VALOR.apellidos(b))
+    : (a,b) => (orden[a.estado]??3)-(orden[b.estado]??3) || (a.numero||1e9)-(b.numero||1e9) || String(a.apellidos).localeCompare(String(b.apellidos)));
   const nombre = x => `${x.nombre||""} ${x.apellidos||""}`.trim();
   const etiq = x => x ? `${x.numero?`nº ${x.numero} `:""}${nombre(x)}` : "socio eliminado";
   const deps = {}; todos.forEach(x=>{ if(x.titularId) (deps[x.titularId] ||= []).push(x); });
@@ -1595,7 +1629,33 @@ function admSocios(){
     b.push(`<button class="btn peq sec" data-accion="datosPersonales" data-id="${x.id}">${S.adm.privado[x.id]?"Ocultar datos personales":"Datos personales"}</button>`);
     return b.join("");
   };
-  const fila = x => `<li data-texto="${esc(`${x.numero||""} ${nombre(x)} ${x.movil||""} ${x.email||""}${x.estado==="aprobado"&&!cuotaAlDia(x)?` cuota pendiente ${x.cuotaAnio?"pendiente de renovar":"sin pagar"}`:""}${x.estado==="pendiente"&&x.pagoNoRecibido?" pago no recibido":""}${x.rol==="admin"?" administrador":""}${x.estado==="pendiente"?" pendiente de aprobación":""}`.toLowerCase())}"><div class="cuerpo"><strong>${x.numero?`Nº ${x.numero}, `:""}${esc(nombre(x))}</strong> ${chipEstado(x)} ${x.estado==="aprobado"?cuotaChip(x):""}${x.estado==="pendiente"&&x.pagoNoRecibido?'<span class="chip no">Pago no recibido</span>':""} ${x.rol==="admin"?'<span class="chip">Administrador</span>':""} ${x.uid?"":'<span class="chip">Sin cuenta</span>'}<br><span class="suave">Móvil ${esc(x.movil||"—")}${x.email?`, ${esc(x.email)}`:""}</span>${nacimientoHTML(x)}${pagoHTML(x)}${editorPagoHTML(x)}${socioDesdeHTML(x)}${x.titularId?`<br><span class="suave">En la unidad familiar de ${esc(etiq(mapa[x.titularId]))}</span>`:""}${(deps[x.id]||[]).length?`<br><span class="suave">Unidad familiar: ${deps[x.id].map(d=>esc(etiq(d))).join(", ")}</span>`:""}</div><div class="btns">${botones(x)}</div>${privadoHTML(x)}</li>`;
+  const textoBusqueda = x => `${x.numero||""} ${nombre(x)} ${x.movil||""} ${x.email||""}${x.estado==="aprobado"&&!cuotaAlDia(x)?` cuota pendiente ${x.cuotaAnio?"pendiente de renovar":"sin pagar"}`:""}${x.estado==="pendiente"&&x.pagoNoRecibido?" pago no recibido":""}${x.rol==="admin"?" administrador":""}${x.estado==="pendiente"?" pendiente de aprobación":""}`.toLowerCase();
+  const COLS = [["numero","Nº"],["apellidos","Apellidos"],["nombre","Nombre"],["edad","Edad"],["categoria","Categoría"],["movil","Móvil"],["email","Correo"],["estado","Estado"],["cuota",`Cuota ${ANIO}`],["pago","Forma de pago"],["familia","Unidad familiar"],["alta","Socio desde"]];
+  const formaTxt = x => ({ingreso:"Ingreso", efectivo:`Metálico${x.pagadoA?` (${x.pagadoA})`:""}`, domiciliacion:"Domiciliación"}[x.formaPago] || "—");
+  const fechaNum = iso => iso ? iso.split("-").reverse().join("/") : "—";
+  const q = (S.adm.busqueda||"").trim().toLowerCase();
+  const familiaTxt = x => x.titularId ? `De ${etiq(mapa[x.titularId])}` : ((deps[x.id]||[]).length ? `Titular (${deps[x.id].length})` : "—");
+  const celdas = x => [
+    x.numero ?? "—", `<span title="${esc(x.apellidos||"")}">${esc(x.apellidos||"")}</span>`, esc(x.nombre||""), x.nacimiento ? edad(x.nacimiento) : "—",
+    esc({adulto:"Adulto", joven:"12 a 17 años", infantil:"Menor de 12", sin:"Sin fecha"}[categoriaDe(x)]),
+    esc(x.movil||"—"), `<span class="celda-email" title="${esc(x.email||"")}">${esc(x.email||"—")}</span>`,
+    `${chipEstado(x)}${x.rol==="admin"?' <span class="chip">Admin</span>':""}`,
+    x.estado==="aprobado" ? (cuotaGratis(x) ? '<span class="chip ok">Gratuita</span>' : (cuotaAlDia(x) ? '<span class="chip ok">Al día</span>' : (x.cuotaAnio ? '<span class="chip pend">Pendiente de renovar</span>' : '<span class="chip no">Sin pagar</span>'))) : (x.estado==="pendiente" && x.pagoNoRecibido ? '<span class="chip no">Pago no recibido</span>' : "—"),
+    esc(formaTxt(x)), esc(familiaTxt(x)), fechaNum(fechaAlta(x))
+  ];
+  const abierto = x => !!S.adm.abiertoSocio[x.id];
+  const fila = (x,i) => {
+    const oculto = q && !textoBusqueda(x).includes(q) ? " hidden" : "";
+    return `<tr class="fila-socio ${x.estado} ${i%2?"par":""}" data-texto="${esc(textoBusqueda(x))}" data-id="${x.id}"${oculto}>${celdas(x).map((c,k)=>`<td class="c-${COLS[k][0]}">${c}</td>`).join("")}<td class="c-accion"><button class="btn peq sec" data-accion="abrirSocio" data-id="${x.id}" aria-expanded="${abierto(x)}">${abierto(x)?"Cerrar":"Ver"}</button></td></tr>`
+      + (abierto(x) ? `<tr class="detalle-socio" data-detalle-de="${x.id}"${oculto}><td colspan="${COLS.length+1}"><div class="detalle-in">
+        <p style="margin:0 0 4px"><strong>${x.numero?`Nº ${x.numero}, `:""}${esc(nombre(x))}</strong> ${chipEstado(x)} ${x.estado==="aprobado"?cuotaChip(x):""}${x.estado==="pendiente"&&x.pagoNoRecibido?' <span class="chip no">Pago no recibido</span>':""}${x.rol==="admin"?' <span class="chip">Administrador</span>':""}${x.uid?"":' <span class="chip">Sin cuenta</span>'}</p>
+        <div class="suave">Móvil ${esc(x.movil||"—")}${x.email?`, ${esc(x.email)}`:""}${nacimientoHTML(x)}${pagoHTML(x)}${socioDesdeHTML(x)}${x.titularId?`<br><span class="suave">En la unidad familiar de ${esc(etiq(mapa[x.titularId]))}</span>`:""}${(deps[x.id]||[]).length?`<br><span class="suave">Unidad familiar: ${deps[x.id].map(d=>esc(etiq(d))).join(", ")}</span>`:""}</div>
+        ${editorPagoHTML(x)}
+        <div class="btns" style="margin-top:12px">${botones(x)}</div>
+        ${privadoHTML(x)}</div></td></tr>` : "");
+  };
+  const cabecera = COLS.map(([c,t])=>{ const act = os && os.col===c; return `<th scope="col"${act?` aria-sort="${os.asc?"ascending":"descending"}"`:""} class="c-${c}"><button type="button" class="th-btn" data-accion="ordenarSocios" data-id="${c}">${t}${act?(os.asc?" ▲":" ▼"):""}</button></th>`; }).join("") + `<th scope="col" class="c-accion"><span class="solo-lector">Acciones</span></th>`;
+  const visibles = lista.filter(x=>!q || textoBusqueda(x).includes(q)).length;
   return `<div class="panel-adm"><h2>Socios</h2>
     <p class="suave" style="margin-top:8px;max-width:70ch">Los administradores gestionan toda la web. Para dar permisos a un socio, debe tener cuenta y el alta aprobada: pulsa «Hacer administrador» en su ficha. Puedes quitárselos cuando quieras.</p>
     <datalist id="lista-junta-cobro">${listaJunta().map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
@@ -1623,14 +1683,15 @@ function admSocios(){
     ${excelHTML()}
     ${pendientes?`<p style="margin-top:28px;max-width:70ch"><strong>${pendientes} ${pendientes===1?"solicitud pendiente":"solicitudes pendientes"} de aprobación.</strong> Salen las primeras de la lista. Apruébalas solo cuando hayas comprobado el ingreso de la cuota.</p>`:""}
     ${sinCuota?`<p class="suave" style="margin-top:28px">${sinCuota} ${sinCuota===1?"socio tiene":"socios tienen"} la cuota de ${ANIO} sin pagar o por renovar. Usa el filtro «Cuota pendiente» para verlos.</p>`:""}
-    <div class="campo" style="margin-top:32px;max-width:420px"><label for="buscar-socio">Buscar</label><input id="buscar-socio" type="search" data-filtro="lista-socios" placeholder="Número, nombre o móvil"></div>
+    <div class="campo" style="margin-top:32px;max-width:420px"><label for="buscar-socio">Buscar</label><input id="buscar-socio" type="search" data-filtro="tabla-socios" placeholder="Número, nombre o móvil" value="${esc(S.adm.busqueda||"")}"></div>
     <div class="btns" style="margin-top:14px">
       <button type="button" class="btn peq sec" data-accion="filtrar" data-valor="">Todos</button>
       <button type="button" class="btn peq sec" data-accion="filtrar" data-valor="pendiente de aprobación">Pendientes de aprobación</button>
       <button type="button" class="btn peq sec" data-accion="filtrar" data-valor="pago no recibido">Pago no recibido</button>
       <button type="button" class="btn peq sec" data-accion="filtrar" data-valor="cuota pendiente">Cuota pendiente</button>
     </div>
-    ${lista.length?`<ul class="lista-adm" id="lista-socios">${lista.map(fila).join("")}</ul>`:"<p>Todavía no hay socios registrados.</p>"}</div>`;
+    ${lista.length?`<p class="meta" id="tabla-socios-cuenta" style="margin-top:14px">Mostrando ${visibles} de ${lista.length} socios. Pulsa en un título para ordenar y en «Ver» para ver todos los datos y las acciones de cada socio.</p>
+    <div class="tabla-socios-scroll"><table class="tabla-socios" id="tabla-socios"><thead><tr>${cabecera}</tr></thead><tbody>${lista.map(fila).join("")}</tbody></table></div>`:"<p>Todavía no hay socios registrados.</p>"}</div>`;
 }
 function admActividades(){
   const D = S.adm.datos, ed = D.actividades.find(x=>x.id===S.adm.edit)||{};
@@ -1986,6 +2047,8 @@ const ACCIONES = {
   async copiarCorreos(){ await copiarTexto([...new Set(avisoGrupos().map(g=>g.contacto.email).filter(Boolean))].join(", "), "Correos copiados"); },
   async copiarTextoAviso(){ await copiarTexto(S.adm.textoAviso ?? textoAvisoBase(), "Texto copiado"); },
   async copiarMoviles(){ await copiarTexto([...new Set(avisoGrupos().map(g=>g.contacto.movil).filter(Boolean))].map(m=>"+34"+m).join(", "), "Móviles copiados"); },
+  abrirSocio(id){ S.adm.abiertoSocio[id] = !S.adm.abiertoSocio[id]; refrescar(); },
+  ordenarSocios(col){ const o = S.adm.ordenSocios; S.adm.ordenSocios = o && o.col===col ? {col, asc:!o.asc} : {col, asc:true}; refrescar(); },
   async noPagada(id){
     const x = S.adm.datos.socios.find(z=>z.id===id), nom = x ? `${x.nombre} ${x.apellidos}` : "esta persona";
     if(!confirm(`¿Marcar la cuota de ${ANIO} de ${nom} como no pagada?`)) return;
@@ -2435,8 +2498,16 @@ document.addEventListener("input", e=>{
     return;
   }
   const i = e.target.closest("[data-filtro]"); if(!i) return;
-  const q = i.value.trim().toLowerCase();
-  document.querySelectorAll("#"+i.dataset.filtro+" li").forEach(li => { li.hidden = !!q && !(li.dataset.texto||"").includes(q); });
+  const q = i.value.trim().toLowerCase(), cont = document.getElementById(i.dataset.filtro);
+  if(i.dataset.filtro==="tabla-socios") S.adm.busqueda = i.value;
+  if(!cont) return;
+  let vis = 0, tot = 0;
+  cont.querySelectorAll("[data-texto]").forEach(el => {
+    const oc = !!q && !(el.dataset.texto||"").includes(q); el.hidden = oc; tot++; if(!oc) vis++;
+    const det = el.dataset.id && cont.querySelector(`[data-detalle-de="${el.dataset.id}"]`); if(det) det.hidden = oc;
+  });
+  const cuenta = document.getElementById(i.dataset.filtro+"-cuenta");
+  if(cuenta) cuenta.textContent = `Mostrando ${vis} de ${tot} socios. Pulsa en un título para ordenar y en «Ver» para ver todos los datos y las acciones de cada socio.`;
 });
 document.addEventListener("submit", async e=>{
   const f = e.target.closest("form[data-form]"); if(!f) return;
