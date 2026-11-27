@@ -352,6 +352,14 @@ html[data-modo="oscuro"] .tabla-socios thead th{color:var(--papel)}
 .mini-fotos{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px}
 .mini-foto{display:grid;gap:4px;font-size:.85rem;font-weight:400}
 .mini-foto img{width:104px;height:78px;object-fit:cover;border:1px solid var(--linea)}
+/* Activar cuenta: elegir ficha */
+.opciones-vinculo{display:grid;gap:10px}
+.opciones-vinculo .opcion{align-items:flex-start}
+.opciones-vinculo input[disabled]+span{opacity:.6}
+.familia-vinculo{border:1px solid var(--linea);border-radius:8px;padding:14px 18px;margin:0;display:grid;gap:6px}
+.familia-vinculo legend{font-weight:700;padding:0 6px}
+.familia-vinculo p{margin:0 0 6px}
+.vinculos{border-color:var(--marca)}
 /* Aviso de renovación */
 .aviso-renov{margin:24px 0 8px;padding:20px 22px;border:2px solid var(--sol);border-radius:10px}
 .aviso-renov h3{margin-bottom:10px}
@@ -441,7 +449,7 @@ html[data-modo="oscuro"] .tabla-socios thead th{color:var(--papel)}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updateProfile, sendEmailVerification, reload } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, runTransaction, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ============================================================
@@ -835,7 +843,7 @@ async function prepararImportacion(archivo, opciones){
     if(dni && !visDni.has(dni)) visDni.set(dni,n);
     if(movil && (años===null || años>=18) && !visMovil.has(movil)) visMovil.set(movil,n);
     const residencia = g("residencia"); if(!residencia) avisos.push("sin lugar de residencia");
-    const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(g("email")) ? g("email") : ""; if(g("email") && !email) avisos.push("correo no válido, no se guarda");
+    const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(g("email")) ? correoMin(g("email")) : ""; if(g("email") && !email) avisos.push("correo no válido, no se guarda");
     let socioDesde = xlFecha(cols.marca===undefined ? "" : f[cols.marca]); const hayMarca = !!socioDesde;
     if(!socioDesde || socioDesde>hoyISO()) socioDesde = hoyISO();
     const noPagado = /^no\b/.test(xlNorm(g("pagado")));
@@ -1299,14 +1307,13 @@ async function vistaActividades(){
    ============================================================ */
 function vistaEntrar(modo){
   const reg = modo==="registro";
-  if(S.user && !S.perfil) return vistaFicha();
+  if(S.user && !S.perfil) return vistaSinFicha();
+  if(modo==="activar" && !S.demo) return vistaActivar();
   if(S.demo) return `<section class="contenedor pagina estrecho"><h1 class="h-pag">Portal del socio</h1><p class="aviso">Para activar el acceso de socios, pega los datos de Firebase en el archivo firebase-config.js y súbelo junto a index.html.</p></section>`;
   return `<section class="contenedor pagina estrecho">
     <h1 class="h-pag">${reg?"Hazte socio":"Portal del socio"}</h1>
-    <div class="pestanas">
-      <a class="pest" href="#/entrar" ${!reg?'aria-current="page"':""}>Ya soy socio</a>
-      <a class="pest" href="#/entrar?registro" ${reg?'aria-current="page"':""}>Quiero hacerme socio</a>
-    </div>
+    ${pestanasEntrar(reg?"registro":"entrar")}
+    ${reg?`<p class="aviso">¿Ya eras socio de la asociación? No rellenes este formulario: <a href="#/entrar?activar">activa tu cuenta</a> con el correo que diste a la asociación.</p>`:""}
     ${reg?`<p class="suave">Crea tu cuenta y la junta revisará tu solicitud. El alta se completa cuando se recibe la cuota anual. Una vez aprobada, tendrás el precio de socio, podrás apuntarte desde tu portal y votar en las encuestas.</p>`:""}
     <form class="formu" data-form="${reg?"registro":"entrar"}">
       ${reg?`<div class="fila-campos">
@@ -1322,7 +1329,8 @@ function vistaEntrar(modo){
       ${reg?camposPago(null)+consentimientoHTML():""}
       <div><button class="btn" type="submit">${reg?"Solicitar el alta":"Entrar"}</button></div>
       ${reg?"":`<div><button type="button" class="enlace-btn" data-accion="recuperar">He olvidado mi contraseña</button></div>`}
-    </form></section>`;
+    </form>
+    ${reg?"":`<p class="aviso" style="margin-top:32px"><strong>¿Eras socio antes de que existiera la web y es la primera vez que entras?</strong> No hace falta darse de alta: <a href="#/entrar?activar">activa tu cuenta</a> con el correo que diste a la asociación.</p>`}</section>`;
 }
 const listaJunta = () => String(S.ajustes.juntaCobro||"").split("\n").map(x=>x.trim()).filter(Boolean);
 function leerPago(fd){
@@ -1400,6 +1408,172 @@ function avisoCuota(){
   if(p.estado==="aprobado" && !cuotaAlDia(p)) return cajaCuota(p.cuotaAnio ? `Tienes pendiente de renovar la cuota de ${ANIO}` : `Tienes pendiente de pagar la cuota de ${ANIO}`, p, "Cuando la junta reciba el pago, lo registrará en tu ficha.", true);
   return "";
 }
+/* ============================================================
+   Activar la cuenta de quien ya estaba en la lista de socios
+   (fichas importadas o añadidas por la junta, sin cuenta).
+   1) Crea su acceso con el correo que dio a la asociación.
+   2) Confirma el correo (enlace que envía Firebase): así nadie se hace pasar por otro.
+   3) La web busca las fichas con ese correo y la persona dice quién es
+      (y, si comparten correo, si quiere tener a su familia a su cargo).
+   4) La junta confirma con un clic y la cuenta se queda con su ficha.
+   ============================================================ */
+const correoMin = v => String(v||"").trim().toLowerCase();
+function contactoJunta(){
+  const a = S.ajustes, partes = [];
+  if(a.email) partes.push(`<a href="mailto:${esc(a.email)}">${esc(a.email)}</a>`);
+  if(a.whatsappContacto) partes.push(`WhatsApp ${esc(a.whatsappContacto)}`);
+  else if(a.telefono) partes.push(`teléfono ${esc(a.telefono)}`);
+  return partes.join(" o ") || "un miembro de la junta";
+}
+function pestanasEntrar(modo){
+  return `<div class="pestanas">
+      <a class="pest" href="#/entrar" ${modo==="entrar"?'aria-current="page"':""}>Entrar</a>
+      <a class="pest" href="#/entrar?activar" ${modo==="activar"?'aria-current="page"':""}>Ya era socio: activar mi cuenta</a>
+      <a class="pest" href="#/entrar?registro" ${modo==="registro"?'aria-current="page"':""}>Quiero hacerme socio</a>
+    </div>`;
+}
+function vistaActivar(){
+  return `<section class="contenedor pagina estrecho"><h1 class="h-pag">Activa tu cuenta</h1>
+    ${pestanasEntrar("activar")}
+    <p>Si ya eras socio de la asociación, no hace falta que rellenes el alta. Crea aquí tu acceso con <strong>el mismo correo que diste a la asociación</strong>.</p>
+    <p class="suave">Te enviaremos un correo para confirmar que es tuyo y después te mostraremos tu ficha de socio, con tu número y tu antigüedad. Si compartes el correo con tu familia, podrás elegir quién eres.</p>
+    <form class="formu" data-form="activar">
+      <div class="campo"><label for="act-email">Correo electrónico</label><input id="act-email" name="email" type="email" required autocomplete="email"></div>
+      <div class="campo"><label for="act-pass">Elige una contraseña</label><input id="act-pass" name="pass" type="password" required minlength="6" autocomplete="new-password"><small>Mínimo 6 caracteres.</small></div>
+      <div><button class="btn" type="submit">Crear mi acceso</button></div>
+    </form>
+    <p class="suave" style="margin-top:28px">¿Ya creaste tu acceso antes? <a href="#/entrar">Entra con tu correo y tu contraseña</a>.</p></section>`;
+}
+async function vistaSinFicha(){
+  const u = S.user, email = correoMin(u.email);
+  if(S.verFichaNueva) return vistaFicha().replace('<p class="aviso">Tu cuenta ya existe, pero falta tu ficha de socio. Rellena estos datos y la junta revisará tu solicitud.</p>', `<p class="aviso">Rellena tus datos para hacerte socio. La junta revisará tu solicitud. <button class="enlace-btn" data-accion="volverVincular">Volver</button></p>`);
+  let pet = null;
+  try{ const sn = await getDoc(doc(db,"vinculos",u.uid)); pet = sn.exists() ? sn.data() : null; }catch(e){ console.error(e); }
+  if(!pet && !u.emailVerified) return vistaConfirmarCorreo(email);
+  let fichas = [];
+  try{
+    const sn = await getDocs(query(collection(db,"socios"), where("email","==",email)));
+    fichas = sn.docs.map(d=>({id:d.id, ...d.data()}));
+  }catch(e){ console.error(e); }
+  if(pet) return vistaPeticionVinculo(pet, fichas);
+  const libres = fichas.filter(x=>!x.uid && x.estado==="aprobado").sort((a,b)=>(a.numero||1e9)-(b.numero||1e9));
+  if(!libres.length || S.vincNoSoy) return vistaSinCoincidencias(email, S.vincNoSoy);
+  S.vinc = {fichas:libres};
+  return vistaElegirFicha(libres, email);
+}
+function vistaConfirmarCorreo(email){
+  return `<section class="contenedor pagina estrecho"><h1 class="h-pag">Confirma tu correo</h1>
+    <p class="aviso">Te hemos enviado un correo a <strong>${esc(email)}</strong> con un enlace. Ábrelo y pulsa el enlace para confirmar que el correo es tuyo. Si no lo ves, mira en la carpeta de correo no deseado.</p>
+    <p>Así comprobamos que nadie se hace pasar por ti. Después buscaremos tu ficha de socio.</p>
+    <div class="btns"><button class="btn" data-accion="comprobarCorreo">Ya lo he confirmado</button><button class="btn sec" data-accion="reenviarCorreo">Volver a enviar el correo</button></div>
+    <p class="suave" style="margin-top:28px">¿No estabas en la lista de socios? <button class="enlace-btn" data-accion="fichaNueva">Hazte socio rellenando tus datos</button></p></section>`;
+}
+const nombreFicha = x => `${x.numero?`Nº ${x.numero} · `:""}${x.nombre||""} ${x.apellidos||""}`.trim();
+function vistaElegirFicha(fichas, email){
+  const una = fichas.length===1;
+  const detalle = x => [fechaAlta(x)?`socio desde ${String(fechaAlta(x)).slice(0,4)}`:"", x.nacimiento?`${edad(x.nacimiento)} años`:""].filter(Boolean).join(", ");
+  const opcion = x => {
+    const bloq = x.nacimiento && edad(x.nacimiento) < 14;
+    return `<label class="opcion"><input type="radio" name="soy" value="${x.id}" ${una&&!bloq?"checked":""} ${bloq?"disabled":""} required> <span><strong>${esc(nombreFicha(x))}</strong>${detalle(x)?`<br><span class="suave">${esc(detalle(x))}</span>`:""}${bloq?'<br><span class="suave">Menor de 14 años: no puede tener cuenta propia. Puede estar a cargo de su padre o su madre.</span>':""}</span></label>`;
+  };
+  return `<section class="contenedor pagina estrecho"><h1 class="h-pag">Activa tu cuenta</h1>
+    <p>${una ? `Hemos encontrado esta ficha de socio con el correo <strong>${esc(email)}</strong>. ¿Eres tú?` : `El correo <strong>${esc(email)}</strong> lo comparten ${fichas.length} personas de la asociación. ¿Quién eres tú?`}</p>
+    <form class="formu" data-form="vincularFicha">
+      <div class="opciones-vinculo">${fichas.map(opcion).join("")}</div>
+      ${una ? "" : `<fieldset class="familia-vinculo"><legend>¿Sois una unidad familiar?</legend>
+        <p class="suave">Marca a las personas que quieres tener a tu cargo: podrás apuntarlas a las actividades y votar en nombre de las mayores de edad. Si cada uno va a tener su propia cuenta, no marques a nadie. Solo puede tener a otros a su cargo una persona mayor de edad.</p>
+        ${fichas.map(x=>`<label class="chk"><input type="checkbox" name="familia" value="${x.id}"> ${esc(nombreFicha(x))}</label>`).join("")}</fieldset>`}
+      <p class="suave">La junta confirmará la vinculación. Después verás aquí tu ficha, con tu número de socio y tu antigüedad.</p>
+      <div class="btns"><button class="btn" type="submit">${una?"Sí, soy yo":"Enviar"}</button>${una?`<button type="button" class="btn sec" data-accion="noSoyYo">No soy yo</button>`:""}</div>
+    </form>
+    <p class="suave" style="margin-top:28px">¿No apareces o algún dato no es correcto? Escribe a la junta: ${contactoJunta()}. Si eres nuevo, <button class="enlace-btn" data-accion="fichaNueva">hazte socio rellenando tus datos</button>.</p></section>`;
+}
+function vistaSinCoincidencias(email, noEra){
+  return `<section class="contenedor pagina estrecho"><h1 class="h-pag">Activa tu cuenta</h1>
+    <p class="aviso">${noEra ? "De acuerdo, esa no es tu ficha." : `No hemos encontrado ninguna ficha de socio libre con el correo <strong>${esc(email)}</strong>.`} Si ya eras socio, puede que la asociación tenga apuntado otro correo tuyo, o ninguno. Escribe a la junta (${contactoJunta()}) y lo arreglarán.</p>
+    <p>Si no eras socio, puedes hacerte socio ahora rellenando tus datos.</p>
+    <div class="btns"><button class="btn" data-accion="fichaNueva">Hacerme socio</button>${noEra?`<button class="btn sec" data-accion="volverVincular">Volver</button>`:""}</div></section>`;
+}
+function vistaPeticionVinculo(pet, fichas){
+  const mapa = Object.fromEntries(fichas.map(x=>[x.id,x]));
+  const yo = mapa[pet.soy], fam = (pet.familia||[]).map(id=>mapa[id]).filter(Boolean);
+  return `<section class="contenedor pagina estrecho"><h1 class="h-pag">Solicitud enviada</h1>
+    <p class="aviso">Has pedido activar la cuenta de <strong>${esc(yo ? nombreFicha(yo) : "tu ficha")}</strong>${fam.length?` y tener a tu cargo a ${fam.map(x=>esc(nombreFicha(x))).join(", ")}`:""}. La junta tiene que confirmarlo. En cuanto lo haga, verás aquí tu ficha de socio.</p>
+    <div class="btns"><button class="btn" data-accion="comprobarVinculo">Comprobar si ya está</button><button class="btn sec" data-accion="cancelarVinculo">Cambiar mi elección</button></div>
+    <p class="suave" style="margin-top:28px">Si tarda, puedes escribir a la junta: ${contactoJunta()}.</p></section>`;
+}
+
+/* ---------- Junta: vincular cuentas con fichas ---------- */
+function vinculosHTML(){
+  const D = S.adm.datos, mapa = Object.fromEntries(D.socios.map(x=>[x.id,x]));
+  const libres = D.socios.filter(x=>!x.uid && x.estado==="aprobado" && x.email);
+  const nom = x => x ? `${x.numero?`nº ${x.numero} `:""}${x.nombre||""} ${x.apellidos||""}`.trim() : "una ficha que ya no existe";
+  const peticiones = D.vinculos || [];
+  const coincidencias = D.socios.filter(p=>p.estado==="pendiente" && p.uid && p.email && !p.coincidenciaRevisada)
+    .map(p=>({p, fichas:libres.filter(f=>correoMin(f.email)===correoMin(p.email))})).filter(c=>c.fichas.length);
+  if(!peticiones.length && !coincidencias.length) return "";
+  const filasPet = peticiones.map(v=>{
+    const f = mapa[v.soy], ok = !!f && !f.uid && correoMin(f.email)===correoMin(v.email);
+    const fam = (v.familia||[]).map(id=>mapa[id]).filter(Boolean);
+    return `<li><div class="cuerpo"><strong>${esc(v.email)}</strong> <span class="chip ok">Correo confirmado</span><br>Dice ser <strong>${esc(nom(f))}</strong>${fam.length?`<br>Quiere tener a su cargo (unidad familiar) a: ${fam.map(x=>esc(nom(x))).join(", ")}`:""}${ok?"":'<br><span class="chip no">Esa ficha ya no está libre o no tiene ese correo</span>'}</div>
+      <div class="btns">${ok?`<button class="btn peq" data-accion="confirmarVinculo" data-id="${v.id}">Vincular</button>`:""}<button class="btn peq peligro" data-accion="rechazarVinculo" data-id="${v.id}">Rechazar</button></div></li>`;
+  }).join("");
+  const filasCo = coincidencias.map(({p,fichas})=>`<li><div class="cuerpo"><strong>${esc(`${p.nombre} ${p.apellidos}`)}</strong> <span class="chip pend">Alta nueva</span><br>Ha pedido el alta con el correo ${esc(p.email)}, que ya está en ${fichas.length===1?"la ficha de":"las fichas de"} ${fichas.map(f=>`<strong>${esc(nom(f))}</strong>`).join(", ")}. Comprueba que es la misma persona antes de unir.</div>
+      <div class="btns">${fichas.map(f=>`<button class="btn peq" data-accion="vincularAlta" data-id="${p.id}" data-valor="${f.id}">Es ${esc(nom(f))}: unir</button>`).join("")}<button class="btn peq sec" data-accion="ignorarCoincidencia" data-id="${p.id}">Es otra persona</button></div></li>`).join("");
+  return `<div class="aviso-renov vinculos"><h3>Cuentas para vincular con fichas existentes</h3>
+    <p>Personas que ya estaban en la lista de socios (por ejemplo, importadas del Excel) y han creado su cuenta en la web. Al vincular, la cuenta se queda con su ficha: número de socio, antigüedad, cuota y datos personales.</p>
+    ${filasPet?`<ul class="lista-adm">${filasPet}</ul>`:""}${filasCo?`<ul class="lista-adm">${filasCo}</ul>`:""}</div>`;
+}
+async function vincularCuenta(uid, fichaId, familia, emailCuenta){
+  const D = S.adm.datos, mapa = Object.fromEntries(D.socios.map(x=>[x.id,x]));
+  const ficha = mapa[fichaId];
+  if(!ficha) throw new Error("Esa ficha ya no existe.");
+  if(ficha.uid) throw new Error("Esa ficha ya tiene una cuenta vinculada.");
+  const alta = mapa[uid] || null;
+  if(alta && alta.estado==="aprobado") throw new Error("Esa cuenta ya es un socio activo con su propia ficha.");
+  const leerPriv = async id => { try{ const sn = await getDoc(doc(db,"socios",id,"privado","datos")); return sn.exists() ? sn.data() : {}; }catch{ return {}; } };
+  const privFicha = await leerPriv(fichaId), privAlta = alta ? await leerPriv(uid) : {};
+  const priv = {...privAlta}; for(const [k,v] of Object.entries(privFicha)) if(v!==null && v!==undefined && v!=="") priv[k] = v;
+  const {id:_, ...datos} = ficha;
+  const fusion = {...datos, uid, email:correoMin(emailCuenta || ficha.email || alta?.email), vinculadoDe:fichaId, vinculadoEl:hoyISO()};
+  if(alta){
+    for(const k of ["movil","nacimiento","formaPago","pagadoA"]) if(!fusion[k] && alta[k]) fusion[k] = alta[k];
+    if(!fusion.consentimiento && alta.consentimiento) fusion.consentimiento = true;
+  }
+  const depsFicha = D.socios.filter(x=>x.titularId===fichaId).map(x=>x.id);
+  const fam = [...new Set((familia||[]).filter(id=>id!==fichaId && id!==uid && mapa[id] && !mapa[id].uid && !depsFicha.includes(id)))];
+  fusion.numDependientes = depsFicha.length + fam.length;
+  const lote = writeBatch(db);
+  lote.set(doc(db,"socios",uid), fusion);
+  lote.set(doc(db,"socios",uid,"privado","datos"), priv);
+  lote.delete(doc(db,"socios",fichaId,"privado","datos"));
+  lote.delete(doc(db,"socios",fichaId));
+  for(const id of [...depsFicha, ...fam]) lote.update(doc(db,"socios",id), {titularId:uid});
+  if(fusion.numero) lote.set(doc(db,"indice","n"+fusion.numero), {socioId:uid});
+  if(ficha.movil){ const ix = await getDoc(doc(db,"indice","m"+ficha.movil)); if(ix.exists() && ix.data().socioId===fichaId) lote.set(doc(db,"indice","m"+ficha.movil), {socioId:uid}); }
+  lote.delete(doc(db,"vinculos",uid));
+  await lote.commit();
+  /* Las inscripciones a actividades pasan al nuevo identificador */
+  try{
+    for(const a of await leer("actividades")){
+      const ins = a.inscritos || {}; let cambia = false; const nuevo = {};
+      for(const [k,v] of Object.entries(ins)){
+        const k2 = k===fichaId ? uid : k, v2 = (v||[]).map(x=>x===fichaId ? uid : x);
+        if(k2!==k || v2.some((x,i)=>x!==v[i])) cambia = true;
+        nuevo[k2] = [...new Set([...(nuevo[k2]||[]), ...v2])];
+      }
+      if(cambia) await updateDoc(doc(db,"actividades",a.id), {inscritos:nuevo});
+    }
+  }catch(e){ console.error(e); toast("La cuenta está vinculada, pero no se han podido pasar sus inscripciones a actividades. Revísalas.","error"); }
+}
+async function normalizarCorreos(socios){
+  for(const x of socios){
+    if(x.email && x.email!==correoMin(x.email)){
+      try{ await updateDoc(doc(db,"socios",x.id), {email:correoMin(x.email)}); x.email = correoMin(x.email); }catch(e){ console.error(e); }
+    }
+  }
+}
+
 function vistaFicha(){
   return `<section class="contenedor pagina estrecho"><h1 class="h-pag">Completa tu ficha</h1>
     <p class="aviso">Tu cuenta ya existe, pero falta tu ficha de socio. Rellena estos datos y la junta revisará tu solicitud.</p>
@@ -1437,7 +1611,7 @@ function fichaSocio(p){
 }
 async function vistaCuenta(){
   if(!S.user) return avisoAcceso("Entra con tu cuenta para ver esta página.");
-  if(!S.perfil) return vistaFicha();
+  if(!S.perfil) return vistaSinFicha();
   const act = proximas(await leer("actividades")).filter(a=>misAsistentes(a).length);
   const p = S.perfil, deps = S.deps||[], depende = !!p.titularId;
   const estado = {aprobado:`<span class="chip ok">Socio activo</span> ${cuotaChip(p)}`,pendiente:`<span class="chip pend">Pendiente de aprobación</span>${p.pagoNoRecibido?' <span class="chip no">Pago no recibido</span>':""}`,rechazado:'<span class="chip no">Alta no activa</span>'}[p.estado]||"";
@@ -1504,7 +1678,8 @@ async function vistaEncuestas(){
   const personas = votantesPosibles(), adultos = personas.filter(x=>esMayorEdad(x.nacimiento));
   const estado = await Promise.all(encs.map(async e => {
     if(!e.abierta) return null;
-    const ya = await Promise.all(adultos.map(async x => (await getDoc(doc(db,"encuestas",e.id,"votos",x.id))).exists()));
+    const ya = await Promise.all(adultos.map(async x => (await getDoc(doc(db,"encuestas",e.id,"votos",x.id))).exists()
+      || (x.vinculadoDe && x.id===S.user.uid ? await getDoc(doc(db,"encuestas",e.id,"votos",x.vinculadoDe)).then(d=>d.exists()).catch(()=>false) : false)));
     return adultos.map((x,i)=>({...x, voto:ya[i]}));
   }));
   const sinFecha = !esMayorEdad(S.perfil.nacimiento) && !S.perfil.nacimiento;
@@ -1543,13 +1718,15 @@ async function vistaAdmin(){
   if(!esAdmin()) return avisoAcceso("Esta zona es solo para la junta directiva.");
   const D = S.adm.datos, tab = S.adm.tab;
   D.socios = await leer("socios");
+  try{ D.vinculos = await leer("vinculos"); }catch(e){ console.error(e); D.vinculos = []; }
+  await normalizarCorreos(D.socios);
   if(tab==="actividades") D.actividades = await leer("actividades");
   if(tab==="proyectos") D.proyectos = await leer("proyectos");
   if(tab==="encuestas") D.encuestas = await leer("encuestas");
   if(tab==="noticias") D.noticias = await leerNoticias();
   if(tab==="junta") D.junta = await leer("junta");
   if(tab==="sobre") D.sobre = await cargarSobre();
-  const pend = D.socios.filter(u=>u.estado==="pendiente").length;
+  const pend = D.socios.filter(u=>u.estado==="pendiente").length + (D.vinculos||[]).length;
   const cuerpo = {socios:admSocios, noticias:admNoticias, actividades:admActividades, proyectos:admProyectos, junta:admJunta, sobre:admSobre, encuestas:admEncuestas, web:admWeb}[tab]();
   return `<section class="contenedor pagina"><h1 class="h-pag">Panel de la junta</h1>
     <div class="pestanas">${PESTANAS.map(([k,t])=>`<button class="pest" data-accion="pestana" data-id="${k}" ${tab===k?'aria-current="true"':""}>${t}${k==="socios"&&pend?` (${pend})`:""}</button>`).join("")}</div>
@@ -1659,6 +1836,7 @@ function admSocios(){
   return `<div class="panel-adm"><h2>Socios</h2>
     <p class="suave" style="margin-top:8px;max-width:70ch">Los administradores gestionan toda la web. Para dar permisos a un socio, debe tener cuenta y el alta aprobada: pulsa «Hacer administrador» en su ficha. Puedes quitárselos cuando quieras.</p>
     <datalist id="lista-junta-cobro">${listaJunta().map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
+    ${vinculosHTML()}
     ${avisoRenovacionHTML()}
     <div class="adm-grid" style="margin-top:12px">
       <form class="formu" data-form="socioJunta"><h3>Añadir socio</h3>
@@ -1666,6 +1844,7 @@ function admSocios(){
           <div class="campo"><label for="sj-nombre">Nombre</label><input id="sj-nombre" name="nombre" required maxlength="60"></div>
           <div class="campo"><label for="sj-apellidos">Apellidos</label><input id="sj-apellidos" name="apellidos" required maxlength="100"></div>
         </div>
+        <div class="campo"><label for="sj-email">Correo electrónico (opcional)</label><input id="sj-email" name="email" type="email" maxlength="120"><small>Con este correo podrá activar su cuenta en la web más adelante. Una familia puede compartir el mismo.</small></div>
         <div class="campo"><label for="sj-movil">Número de móvil</label><input id="sj-movil" name="movil" type="tel"><small>Obligatorio para mayores de edad. Un menor puede usar el de su padre o madre, o dejarlo en blanco. Recibe su número de socio al guardarlo y no necesita cuenta.</small></div>
         <div class="campo"><label for="sj-nac">Fecha de nacimiento</label><input id="sj-nac" name="nacimiento" type="date" required max="${hoyISO()}"><small>Define la cuota: ${tramosTexto()} (cuenta la edad que cumple este año).</small></div>
         <div class="campo"><label for="sj-dni">DNI o NIE</label><input id="sj-dni" name="dni" maxlength="12" autocomplete="off"><small>Obligatorio a partir de 14 años.</small></div>
@@ -2049,6 +2228,40 @@ const ACCIONES = {
   async copiarMoviles(){ await copiarTexto([...new Set(avisoGrupos().map(g=>g.contacto.movil).filter(Boolean))].map(m=>"+34"+m).join(", "), "Móviles copiados"); },
   abrirSocio(id){ S.adm.abiertoSocio[id] = !S.adm.abiertoSocio[id]; refrescar(); },
   ordenarSocios(col){ const o = S.adm.ordenSocios; S.adm.ordenSocios = o && o.col===col ? {col, asc:!o.asc} : {col, asc:true}; refrescar(); },
+  async comprobarCorreo(){
+    try{ await reload(S.user); await S.user.getIdToken(true); }catch(e){ console.error(e); }
+    if(!S.user.emailVerified) return toast("Todavía no consta como confirmado. Pulsa el enlace del correo y vuelve a intentarlo.","error");
+    toast("Correo confirmado"); refrescar();
+  },
+  async reenviarCorreo(){ await sendEmailVerification(S.user); toast("Te lo hemos enviado de nuevo"); },
+  fichaNueva(){ S.verFichaNueva = true; refrescar(); },
+  volverVincular(){ S.verFichaNueva = false; S.vincNoSoy = false; refrescar(); },
+  noSoyYo(){ S.vincNoSoy = true; refrescar(); },
+  async cancelarVinculo(){ await deleteDoc(doc(db,"vinculos",S.user.uid)); toast("Solicitud anulada: puedes volver a elegir"); refrescar(); },
+  async comprobarVinculo(){
+    S.perfil = await cargarPerfil(S.user);
+    if(!S.perfil) return toast("La junta todavía no lo ha confirmado. Vuelve a mirar más tarde.");
+    S.priv = await cargarPrivado(); await sincronizarDeps();
+    toast("¡Listo! Tu cuenta ya está vinculada con tu ficha"); location.hash = "#/cuenta"; await ruta();
+  },
+  async confirmarVinculo(id){
+    const v = (S.adm.datos.vinculos||[]).find(x=>x.id===id); if(!v) return;
+    const mapa = Object.fromEntries(S.adm.datos.socios.map(x=>[x.id,x])), f = mapa[v.soy];
+    const fam = (v.familia||[]).filter(i=>mapa[i] && !mapa[i].uid && correoMin(mapa[i].email)===correoMin(v.email));
+    if(!confirm(`¿Vincular la cuenta ${v.email} con la ficha de ${f?`${f.nombre} ${f.apellidos}`:"?"}${fam.length?` y dejar a su cargo a ${fam.map(i=>mapa[i].nombre).join(", ")}`:""}?`)) return;
+    await vincularCuenta(v.id, v.soy, fam, v.email); toast("Cuenta vinculada con su ficha"); refrescar();
+  },
+  async rechazarVinculo(id){
+    if(!confirm("¿Rechazar esta solicitud? La persona podrá volver a elegir o escribir a la junta.")) return;
+    await deleteDoc(doc(db,"vinculos",id)); toast("Solicitud rechazada"); refrescar();
+  },
+  async vincularAlta(id, el){
+    const mapa = Object.fromEntries(S.adm.datos.socios.map(x=>[x.id,x])), p = mapa[id], f = mapa[el.dataset.valor];
+    if(!p || !f) return;
+    if(!confirm(`¿Unir el alta de ${p.nombre} ${p.apellidos} con la ficha de ${f.nombre} ${f.apellidos} (nº ${f.numero||"?"})? La cuenta se quedará con el número, la antigüedad y la cuota de esa ficha.`)) return;
+    await vincularCuenta(id, f.id, [], p.email); toast("Alta unida con su ficha"); refrescar();
+  },
+  async ignorarCoincidencia(id){ await updateDoc(doc(db,"socios",id), {coincidenciaRevisada:true}); toast("Marcada como otra persona"); refrescar(); },
   async noPagada(id){
     const x = S.adm.datos.socios.find(z=>z.id===id), nom = x ? `${x.nombre} ${x.apellidos}` : "esta persona";
     if(!confirm(`¿Marcar la cuota de ${ANIO} de ${nom} como no pagada?`)) return;
@@ -2287,7 +2500,7 @@ const FORMS = {
   async registro(f,fd){
     S.registrando = true;
     try{
-        const nombre = fd.get("nombre").trim(), apellidos = fd.get("apellidos").trim(), email = fd.get("email").trim(), movil = normMovil(fd.get("movil"));
+        const nombre = fd.get("nombre").trim(), apellidos = fd.get("apellidos").trim(), email = correoMin(fd.get("email")), movil = normMovil(fd.get("movil"));
       if(!nombre || !apellidos) throw new Error("Escribe tu nombre y apellidos.");
       if(!movil) throw new Error("Escribe un número de móvil válido, de 9 cifras.");
       const nac = nacimientoPermitido(fd.get("nacimiento"));
@@ -2303,6 +2516,29 @@ const FORMS = {
     } finally { S.registrando = false; }
     toast("Solicitud enviada. La junta la revisará pronto.");
     location.hash = "#/cuenta"; await ruta();
+  },
+  async activar(f,fd){
+    const email = correoMin(fd.get("email"));
+    S.registrando = true;
+    try{
+      const cred = await createUserWithEmailAndPassword(auth, email, fd.get("pass"));
+      try{ await sendEmailVerification(cred.user); }catch(e){ console.error(e); }
+      S.user = cred.user; S.perfil = null; S.priv = null; S.deps = [];
+    } catch(e){
+      if(e && e.code==="auth/email-already-in-use") throw new Error("Ya hay una cuenta con ese correo. Entra con tu contraseña o pulsa «He olvidado mi contraseña».");
+      throw e;
+    } finally { S.registrando = false; }
+    toast("Acceso creado. Revisa tu correo para confirmarlo.");
+    location.hash = "#/cuenta"; await ruta();
+  },
+  async vincularFicha(f,fd){
+    const soy = fd.get("soy"); if(!soy) throw new Error("Elige quién eres.");
+    const fichas = S.vinc?.fichas || [], yo = fichas.find(x=>x.id===soy);
+    if(!yo) throw new Error("Vuelve a cargar la página y elige de nuevo.");
+    const familia = fd.getAll("familia").filter(id=>id!==soy && fichas.some(x=>x.id===id));
+    if(familia.length && !(yo.nacimiento && esMayorEdad(yo.nacimiento))) throw new Error("Solo una persona mayor de edad puede tener a otras a su cargo. Si eres menor, que active primero su cuenta tu padre o tu madre.");
+    await setDoc(doc(db,"vinculos",S.user.uid), {email:correoMin(S.user.email), soy, familia, creado:serverTimestamp()});
+    toast("Solicitud enviada a la junta"); refrescar();
   },
   async perfil(f,fd){
     const datos = {nombre:fd.get("nombre").trim(), apellidos:fd.get("apellidos").trim()};
@@ -2441,6 +2677,8 @@ const FORMS = {
     if(!d.residencia) return toast("Indica el lugar de residencia","error");
     if(ibanTxt){ d.ibanDom = ibanValido(ibanTxt); if(!d.ibanDom) return toast("El IBAN para domiciliar no es válido","error"); }
     if(fd.get("consentimiento")!=="on") return toast("Marca que se ha recogido el consentimiento","error");
+    const correo = correoMin(fd.get("email"));
+    if(correo){ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) return toast("El correo no es válido","error"); d.email = correo; }
     await crearSocioJunta(d); toast("Socio añadido"); refrescar();
   },
   async unir(f,fd){
@@ -2529,7 +2767,7 @@ async function ruta(){
   document.title = S.ajustes.nombre;
   let html;
   try{
-    html = await ({inicio:vistaInicio, proyectos:vistaProyectos, sobre:vistaSobre, noticias:vistaNoticias, junta:vistaJunta, actividades:vistaActividades, encuestas:vistaEncuestas, cuenta:vistaCuenta, admin:vistaAdmin, entrar:()=>vistaEntrar(query==="registro"?"registro":"entrar")}[key] || vistaInicio)();
+    html = await ({inicio:vistaInicio, proyectos:vistaProyectos, sobre:vistaSobre, noticias:vistaNoticias, junta:vistaJunta, actividades:vistaActividades, encuestas:vistaEncuestas, cuenta:vistaCuenta, admin:vistaAdmin, entrar:()=>vistaEntrar(query==="registro"?"registro":(query==="activar"?"activar":"entrar"))}[key] || vistaInicio)();
   }catch(err){
     console.error(err);
     html = `<section class="contenedor pagina"><div class="error-caja"><strong>No se han podido cargar los datos.</strong><br>${esc(errMsg(err))}<br>Revisa que las reglas de Firestore estén publicadas y que tu cuenta tenga permiso.</div></section>`;
@@ -2551,7 +2789,7 @@ window.addEventListener("hashchange", () => { S.apuntar = null; ruta(); });
   onAuthStateChanged(auth, async u=>{
     if(S.registrando) return;
     S.user = u; S.perfil = null;
-    S.deps = []; S.priv = null;
+    S.deps = []; S.priv = null; S.verFichaNueva = false; S.vincNoSoy = false; S.vinc = null;
     try{ if(u){ S.perfil = await cargarPerfil(u); S.priv = await cargarPrivado(); await sincronizarDeps(); } }catch(e){ console.error(e); toast(errMsg(e),"error"); }
     await ruta();
   });
