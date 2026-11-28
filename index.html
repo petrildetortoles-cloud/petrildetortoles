@@ -2130,13 +2130,19 @@ async function crearSocioJunta(d){
   const menor = edad(d.nacimiento) < 18;
   await runTransaction(db, async tx => {
     const c = await tx.get(cont), m = mref ? await tx.get(mref) : null;
-    const ocupado = !!m && m.exists();
-    if(ocupado && !menor) throw new Error("Ese móvil ya pertenece a otro socio.");
+    let ocupado = !!m && m.exists();
+    /* Un menor que usa el móvil de su padre o su madre no se queda con él:
+       si el móvil lo tiene apuntado un menor, el adulto lo recupera. */
+    if(ocupado && !menor){
+      const otro = await tx.get(doc(db,"socios",m.data().socioId));
+      const otroMenor = otro.exists() && otro.data().nacimiento && edad(otro.data().nacimiento) < 18;
+      if(otroMenor) ocupado = false; else throw new Error("Ese móvil ya pertenece a otro socio.");
+    }
     const numero = (c.exists() ? (c.data().ultimo||0) : 0) + 1;
     tx.set(ref,{nombre:d.nombre, apellidos:d.apellidos, movil:d.movil||"", nacimiento:d.nacimiento, uid:null, ...(d.email?{email:d.email}:{}), rol:"socio", estado:"aprobado", titularId:null, numero, consentimiento:true, ...(d.ibanDom?{formaPago:"domiciliacion"}:{}), cuotaAnio:d.cuotaAnio ?? null, socioDesde:d.socioDesde, creado:serverTimestamp()});
     tx.set(doc(db,"socios",ref.id,"privado","datos"),{...(d.dni?{dni:d.dni}:{}), residencia:d.residencia, ...(d.ibanDom?{ibanDomiciliacion:d.ibanDom}:{})});
     tx.set(doc(db,"indice","n"+numero),{socioId:ref.id});
-    if(mref && !ocupado) tx.set(mref,{socioId:ref.id});
+    if(mref && !ocupado && !menor) tx.set(mref,{socioId:ref.id});
     tx.set(cont,{ultimo:numero});
   });
 }
